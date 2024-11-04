@@ -1,2 +1,2 @@
 # WaveSense
-Gesture Recongition using Wifi Sensing on an RFSC 4x2
+Gesture Recongition using WiFi Sensing on an RFSoC 4x2
