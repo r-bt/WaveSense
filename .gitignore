@@ -3,3 +3,4 @@ vivado/wave_sense
 *.log
 *.jou
 vivado/src/constraints/.Xil/
+sim_build/

@@ -42,7 +42,7 @@ setting_reg #(.my_addr(SR_POWER_WINDOW), .width(16), .at_reset(80)) sr_1 (
     .out(window_size), .changed());
 
 // num samples to skip initially
-setting_reg #(.my_addr(SR_SKIP_SAMPLE), .width(32), .at_reset(5000000)) sr_2 (
+setting_reg #(.my_addr(SR_SKIP_SAMPLE), .width(32), .at_reset(0)) sr_2 (
     .clk(clock), .rst(reset), .strobe(set_stb), .addr(set_addr), .in(set_data),
     .out(num_sample_to_skip), .changed(num_sample_changed));
 
