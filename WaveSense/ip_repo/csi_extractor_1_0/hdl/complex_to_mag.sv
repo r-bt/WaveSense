@@ -21,7 +21,12 @@ module complex_to_mag #(
     logic [DATA_WIDTH-1 : 0] abs_i, abs_q;
     logic [DATA_WIDTH-1 : 0] min, max;
 
-    logic [1:0] valid_buf;
+    always_comb begin
+        abs_i = i_in[DATA_WIDTH-1] ? (~i_in + 1) : i_in;
+        abs_q = q_in[DATA_WIDTH-1] ? (~q_in + 1) : q_in;
+        min = abs_i < abs_q ? abs_i : abs_q;
+        max = abs_i > abs_q ? abs_i : abs_q;
+    end
 
     always_ff @(posedge clk_in) begin
         if (rst_in) begin
@@ -33,17 +38,8 @@ module complex_to_mag #(
             mag_out <= 0;
             mag_valid_out <= 0;
         end else begin
-            // Pipeline stage 1
-            abs_i <= i_in[DATA_WIDTH-1] ? (~i_in + 1) : i_in;
-            abs_q <= q_in[DATA_WIDTH-1] ? (~q_in + 1) : q_in;
-            valid_buf[1] <= iq_valid_in;
-            // Pipeline stage 2
-            min <= abs_i < abs_q ? abs_i : abs_q;
-            max <= abs_i > abs_q ? abs_i : abs_q;
-            valid_buf[0] <= valid_buf[1];
-            // Pipeline stage 3
             mag_out <= max + (min >> 2);
-            mag_valid_out <= valid_buf[0];
+            mag_valid_out <= iq_valid_in;
         end
     end
 
