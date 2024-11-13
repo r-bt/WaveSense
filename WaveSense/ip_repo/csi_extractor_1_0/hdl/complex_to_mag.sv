@@ -5,6 +5,8 @@
  * Module `complex_to_mag`
  *
  * Converts complex numbers to magnitude.
+ *
+ * TODO: Make this AXI maybe?
  */
 module complex_to_mag #(
     parameter integer DATA_WIDTH = 32
