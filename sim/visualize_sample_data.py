@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 
 def iq_plot(
@@ -36,7 +37,14 @@ def plot_fft(
 fs = 24
 
 # Load the samples
-wave = np.fromfile("samples.dat", dtype=np.int16)
+
+# Get current directory
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Samples path
+samples_path = os.path.join(current_dir, "samples.dat")
+
+wave = np.fromfile(samples_path, dtype=np.int16)
 n_samples = len(wave) // 2
 
 print("Number of samples: ", n_samples)
