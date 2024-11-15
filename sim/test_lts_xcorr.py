@@ -56,7 +56,7 @@ class AXISMonitor(BusMonitor):
 
 
 class AXISDriver(BusDriver):
-    def __init__(self, dut, name, clk):
+    def __init__(self, dut, name, clk, send_invalid):
         self._signals = ['axis_tvalid', 'axis_tready',
                          'i_axis_tdata', 'q_axis_tdata']
         BusDriver.__init__(self, dut, name, clk)
@@ -64,6 +64,10 @@ class AXISDriver(BusDriver):
         self.bus.i_axis_tdata.value = 0
         self.bus.q_axis_tdata.value = 0
         self.bus.axis_tvalid.value = 0
+        if send_invalid:
+            self.wait_cycles_range = (0, 3)
+        else:
+            self.wait_cycles_range = (0, 0)
 
     async def _driver_send(self, value, sync=True):
         if value['type'] == 'single':
@@ -85,7 +89,7 @@ class AXISDriver(BusDriver):
                     await Edge(self.clock)
                     await ReadOnly()
                 # It's guaranteed that there will be invalid cycles between valid inputs
-                wait_cycles = random.randint(1, 3)
+                wait_cycles = random.randint(*self.wait_cycles_range)
                 if wait_cycles:
                     await FallingEdge(self.clock)
                     self.bus.i_axis_tdata.value = 0
@@ -108,10 +112,57 @@ async def reset(clk, reset_wire, num_cycles, active_val):
 
 
 @cocotb.test()
-async def test_lts_xcorr(dut):
+async def test_lts_xcorr_with_invalid(dut):
     inm = AXISMonitor(dut, 'signal', dut.clk_in)
     outm = AXISMonitor(dut, 'xcorr', dut.clk_in)
-    ind = AXISDriver(dut, 'signal', dut.clk_in)
+    ind = AXISDriver(dut, 'signal', dut.clk_in, True)
+    # Setup the DUT
+    cocotb.start_soon(Clock(dut.clk_in, 10, units="ns").start())
+    await set_ready(dut, 1)
+    await reset(dut.clk_in, dut.rst_in, 2, 1)
+    # Feed in some real data
+    cwd = os.path.dirname(os.path.abspath(__file__))
+    samples_path = os.path.join(cwd, "samples.dat")
+    signal = np.fromfile(samples_path, dtype=np.int16)[:1000]
+    i = signal[::2]
+    q = signal[1::2]
+    # Drive the DUT
+    await ClockCycles(dut.clk_in, 1)
+    ind.append({'type': 'burst', 'contents': {'data': zip(i, q)}})
+    # Test back-pressure
+    await ClockCycles(dut.clk_in, 200)
+    await set_ready(dut, 0)
+    await ClockCycles(dut.clk_in, 100)
+    await set_ready(dut, 1)
+    await ClockCycles(dut.clk_in, 15)
+    await set_ready(dut, 0)
+    await ClockCycles(dut.clk_in, 49)
+    await set_ready(dut, 1)
+    await ClockCycles(dut.clk_in, 266)
+    await set_ready(dut, 0)
+    await ClockCycles(dut.clk_in, 49)
+    await set_ready(dut, 1)
+    await ClockCycles(dut.clk_in, 266)
+    await set_ready(dut, 0)
+    await ClockCycles(dut.clk_in, 49)
+    await set_ready(dut, 1)
+    await ClockCycles(dut.clk_in, 900)
+    # Check that the data is what we expect
+    assert inm.transactions == 500, 'Sent the wrong number of samples!'
+    assert outm.transactions == 469, 'Received the wrong number of samples!'
+    # Check that xcorr worked
+    xcorr_mag = np.abs(np.array(outm.data_i) + 1j * np.array(outm.data_q))
+    # plt.plot(xcorr_mag, '-o')
+    # plt.show()
+    peak1, peak2 = np.argpartition(xcorr_mag, -2)[-2:]
+    assert 63 <= abs(peak1 - peak2) <= 65, 'Peaks are not 64 samples apart!'
+
+
+@cocotb.test()
+async def test_lts_xcorr_no_invalid(dut):
+    inm = AXISMonitor(dut, 'signal', dut.clk_in)
+    outm = AXISMonitor(dut, 'xcorr', dut.clk_in)
+    ind = AXISDriver(dut, 'signal', dut.clk_in, False)
     # Setup the DUT
     cocotb.start_soon(Clock(dut.clk_in, 10, units="ns").start())
     await set_ready(dut, 1)

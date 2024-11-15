@@ -12,12 +12,15 @@ module complex_multiply #(
     input wire clk_in,
 
     input wire signed [DATA_WIDTH-1:0] i0_in, q0_in, i1_in, q1_in,
+    input wire valid_in,
     output logic signed [2*DATA_WIDTH-1:0] i_out, q_out
 );
 
     always_ff @(posedge clk_in) begin
-        i_out <= i0_in * i1_in - q0_in * q1_in;
-        q_out <= i0_in * q1_in + q0_in * i1_in;
+        if (valid_in) begin
+            i_out <= i0_in * i1_in - q0_in * q1_in;
+            q_out <= i0_in * q1_in + q0_in * i1_in;
+        end
     end
 
 endmodule
