@@ -30,11 +30,6 @@ module complex_to_mag #(
 
     always_ff @(posedge clk_in) begin
         if (rst_in) begin
-            abs_i <= 0;
-            abs_q <= 0;
-            min <= 0;
-            max <= 0;
-            valid_buf <= 0;
             mag_out <= 0;
             mag_valid_out <= 0;
         end else begin
