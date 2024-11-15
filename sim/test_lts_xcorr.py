@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
+import random
 
 # cocotb imports
 import cocotb
@@ -83,6 +84,14 @@ class AXISDriver(BusDriver):
                 while not self.bus.axis_tready.value:
                     await Edge(self.clock)
                     await ReadOnly()
+                # It's guaranteed that there will be invalid cycles between valid inputs
+                wait_cycles = random.randint(1, 3)
+                if wait_cycles:
+                    await FallingEdge(self.clock)
+                    self.bus.i_axis_tdata.value = 0
+                    self.bus.q_axis_tdata.value = 0
+                    self.bus.axis_tvalid.value = 0
+                    await ClockCycles(self.clock, wait_cycles - 1)
         await FallingEdge(self.clock)
         self.bus.axis_tvalid.value = 0
 
@@ -125,14 +134,22 @@ async def test_lts_xcorr(dut):
     await set_ready(dut, 0)
     await ClockCycles(dut.clk_in, 49)
     await set_ready(dut, 1)
-    await ClockCycles(dut.clk_in, 300)
+    await ClockCycles(dut.clk_in, 266)
+    await set_ready(dut, 0)
+    await ClockCycles(dut.clk_in, 49)
+    await set_ready(dut, 1)
+    await ClockCycles(dut.clk_in, 266)
+    await set_ready(dut, 0)
+    await ClockCycles(dut.clk_in, 49)
+    await set_ready(dut, 1)
+    await ClockCycles(dut.clk_in, 900)
     # Check that the data is what we expect
     assert inm.transactions == 500, 'Sent the wrong number of samples!'
     assert outm.transactions == 469, 'Received the wrong number of samples!'
     # Check that xcorr worked
     xcorr_mag = np.abs(np.array(outm.data_i) + 1j * np.array(outm.data_q))
-    # plt.plot(xcorr_mag, '-o')
-    # plt.show()
+    plt.plot(xcorr_mag, '-o')
+    plt.show()
     peak1, peak2 = np.argpartition(xcorr_mag, -2)[-2:]
     assert 63 <= abs(peak1 - peak2) <= 65, 'Peaks are not 64 samples apart!'
 

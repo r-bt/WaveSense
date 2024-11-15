@@ -108,11 +108,11 @@ module lts_xcorr (
         end else begin
             // Stage 1: Complex multiply
             for (int i = 1; i < CMPLX_MULT_STAGES; i++) begin
-                valid_in_reg[i] <= valid_out_reg[i - 1];
+                valid_in_reg[i] <= valid_in_reg[i - 1];
             end
-            valid_in_reg[0] <= signal_axis_tvalid;
+            valid_in_reg[0] <= signal_axis_tvalid && signal_axis_tready;
             // Stage 2: Sum it together
-            if (valid_in_reg[CMPLX_MULT_STAGES-1] && signal_axis_tready) begin
+            if (valid_in_reg[CMPLX_MULT_STAGES-1]) begin
                 for (int i = 1; i < NUM_COEFFS; i++) begin
                     i_sum_reg[i] <= i_mult_reg[i] + i_sum_reg[i - 1];
                     q_sum_reg[i] <= q_mult_reg[i] + q_sum_reg[i - 1];
