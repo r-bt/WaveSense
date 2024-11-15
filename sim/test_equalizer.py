@@ -21,17 +21,13 @@ class AXISMonitor(BusMonitor):
     """
 
     def __init__(self, dut, name, clk, callback=None):
-        if name == 'signal':
-            self._signals = ['axis_tvalid', 'axis_tready',
-                             'i_axis_tdata', 'q_axis_tdata']
-        else:
-            self._signals = ['axis_tvalid', 'axis_tready', 'axis_tlast',
-                             'i_axis_tdata', 'q_axis_tdata']
+        self._signals = ['axis_tvalid', 'axis_tready', 'axis_tlast',
+                         're_axis_tdata', 'im_axis_tdata']
         BusMonitor.__init__(self, dut, name, clk, callback=callback)
         self.clock = clk
         self.transactions = 0
-        self.data_i = [[]]
-        self.data_q = [[]]
+        self.data_re = []
+        self.data_im = []
 
     async def _monitor_recv(self):
         """
@@ -44,37 +40,30 @@ class AXISMonitor(BusMonitor):
             await read_only  # readonly (the postline)
             valid = self.bus.axis_tvalid.value
             ready = self.bus.axis_tready.value
-            i = self.bus.i_axis_tdata.value
-            q = self.bus.q_axis_tdata.value
-            if 'axis_tlast' in self._signals:
-                last = self.bus.axis_tlast.value
-            else:
-                last = None
+            re = self.bus.re_axis_tdata.value
+            im = self.bus.im_axis_tdata.value
             if valid and ready:
                 self.transactions += 1
-                if int(i) > 2**15:
-                    self.data_i[-1].append(i - 2**16)
+                if int(re) > 2**15:
+                    self.data_re.append(re - 2**16)
                 else:
-                    self.data_i[-1].append(int(i))
-                if int(q) > 2**15:
-                    self.data_q[-1].append(q - 2**16)
+                    self.data_re.append(int(re))
+                if int(im) > 2**15:
+                    self.data_im.append(im - 2**16)
                 else:
-                    self.data_q[-1].append(int(q))
+                    self.data_im.append(int(im))
                 # Start a new frame upon receiving a tlast
-                if last:
-                    self.data_i.append([])
-                    self.data_q.append([])
-                self._recv((i, q, last))
+                self._recv((re, im))
 
 
 class AXISDriver(BusDriver):
     def __init__(self, dut, name, clk, send_invalid):
-        self._signals = ['axis_tvalid', 'axis_tready',
-                         'i_axis_tdata', 'q_axis_tdata']
+        self._signals = ['axis_tvalid', 'axis_tready', 'axis_tlast',
+                         're_axis_tdata', 'im_axis_tdata']
         BusDriver.__init__(self, dut, name, clk)
         self.clock = clk
-        self.bus.i_axis_tdata.value = 0
-        self.bus.q_axis_tdata.value = 0
+        self.bus.re_axis_tdata.value = 0
+        self.bus.im_axis_tdata.value = 0
         self.bus.axis_tvalid.value = 0
         if send_invalid:
             self.wait_cycles_range = (0, 3)
@@ -84,17 +73,21 @@ class AXISDriver(BusDriver):
     async def _driver_send(self, value, sync=True):
         if value['type'] == 'single':
             await FallingEdge(self.clock)
-            self.bus.i_axis_tdata.value, self.bus.q_axis_tdata.value = value['contents']['data']
+            self.bus.re_axis_tdata.value, self.bus.im_axis_tdata.value = value['contents']['data']
+            self.bus.axis_tlast.value = value['contents']['last']
             self.bus.axis_tvalid.value = 1
             await ReadOnly()
             while not self.bus.axis_tready.value:
                 await Edge(self.clock)
                 await ReadOnly()
         else:
-            for i, q in value['contents']['data']:
+            for idx, val in enumerate(value['contents']['data']):
+                re, im = val
                 await FallingEdge(self.clock)
-                self.bus.i_axis_tdata.value = int(i)
-                self.bus.q_axis_tdata.value = int(q)
+                self.bus.re_axis_tdata.value = int(re)
+                self.bus.im_axis_tdata.value = int(im)
+                self.bus.axis_tlast.value = int(
+                    idx == len(value['contents']['data']) - 1)
                 self.bus.axis_tvalid.value = 1
                 await ReadOnly()
                 while not self.bus.axis_tready.value:
@@ -103,8 +96,9 @@ class AXISDriver(BusDriver):
                 wait_cycles = random.randint(*self.wait_cycles_range)
                 if wait_cycles:
                     await FallingEdge(self.clock)
-                    self.bus.i_axis_tdata.value = 0
-                    self.bus.q_axis_tdata.value = 0
+                    self.bus.re_axis_tdata.value = 0
+                    self.bus.im_axis_tdata.value = 0
+                    self.bus.axis_tlast.value = 0
                     self.bus.axis_tvalid.value = 0
                     await ClockCycles(self.clock, wait_cycles - 1)
         await FallingEdge(self.clock)
@@ -113,7 +107,7 @@ class AXISDriver(BusDriver):
 
 async def set_ready(dut, ready_val):
     await FallingEdge(dut.clk_in)
-    dut.lts_axis_tready.value = ready_val
+    dut.csi_axis_tready.value = ready_val
 
 
 async def reset(clk, reset_wire, num_cycles, active_val):
@@ -124,9 +118,9 @@ async def reset(clk, reset_wire, num_cycles, active_val):
 
 @cocotb.test()
 async def test_sync_long_with_invalid(dut):
-    inm = AXISMonitor(dut, 'signal', dut.clk_in)
-    outm = AXISMonitor(dut, 'lts', dut.clk_in)
-    ind = AXISDriver(dut, 'signal', dut.clk_in, True)
+    inm = AXISMonitor(dut, 'fft', dut.clk_in)
+    outm = AXISMonitor(dut, 'csi', dut.clk_in)
+    ind = AXISDriver(dut, 'fft', dut.clk_in, True)
     # Setup the DUT
     cocotb.start_soon(Clock(dut.clk_in, 10, units="ns").start())
     await set_ready(dut, 1)
@@ -137,33 +131,41 @@ async def test_sync_long_with_invalid(dut):
     signal = np.fromfile(samples_path, dtype=np.int16)[:1000]
     i = signal[::2]
     q = signal[1::2]
+    ref_lts_loc = 171
+    lts1 = i[ref_lts_loc+32:ref_lts_loc+96] + \
+        1j * q[ref_lts_loc+32:ref_lts_loc+96]
+    fft1 = np.fft.fft(lts1) / len(lts1) / 2 / np.pi
+    lts2 = i[ref_lts_loc+96:ref_lts_loc+160] + \
+        1j * q[ref_lts_loc+96:ref_lts_loc+160]
+    fft2 = np.fft.fft(lts2) / len(lts2) / 2 / np.pi
+    lts_ref = np.loadtxt(os.path.join(cwd, "lts.txt")).view(complex)
+    fft_ref = np.fft.fft(lts_ref)
     # Drive the DUT
     await ClockCycles(dut.clk_in, 1)
-    ind.append({'type': 'burst', 'contents': {'data': zip(i[160:], q[160:])}})
-    # Test back-pressure
-    await ClockCycles(dut.clk_in, 1000)
+    ind.append({'type': 'burst', 'contents': {
+               'data': list(zip(fft1.real, fft1.imag))}})
+    ind.append({'type': 'burst', 'contents': {
+               'data': list(zip(fft2.real, fft2.imag))}})
+    await ClockCycles(dut.clk_in, 400)
     # Check that the data is what we expect
-    assert inm.transactions == 340, 'Sent the wrong number of samples!'
-    assert outm.transactions == 128, 'Received the wrong number of samples!'
+    assert inm.transactions == 128, 'Sent the wrong number of samples!'
+    assert outm.transactions == 52, 'Received the wrong number of samples!'
     # Check that it worked
-    ref_lts_loc = 171
-    lts1 = np.array(outm.data_i[0]) + 1j * np.array(outm.data_q[0])
-    assert (lts1 == i[ref_lts_loc+32:ref_lts_loc+96] +
-            1j * q[ref_lts_loc+32:ref_lts_loc+96]).all()
-    lts2 = np.array(outm.data_i[1]) + 1j * np.array(outm.data_q[1])
-    assert (lts2 == i[ref_lts_loc+96:ref_lts_loc+160] +
-            1j * q[ref_lts_loc+96:ref_lts_loc+160]).all()
-    # Plot the FFTs as a visual check
-    # plt.plot(np.fft.fft(lts1).real, '-o')
-    # plt.plot(np.fft.fft(lts2).real, '-o')
+    h = np.array(outm.data_re) + 1j * np.array(outm.data_im)
+    h_expanded = np.concat(([np.inf], h[:26], [np.inf] * 11, h[26:]))
+    # plt.plot((fft1 / h_expanded).real, '-o')
+    # plt.plot((fft2 / h_expanded).real, '-o')
+    # plt.plot(fft_ref.real, '-o')
     # plt.show()
+    assert np.isclose((fft1 / h_expanded).real, fft_ref.real, atol=0.05).all()
+    assert np.isclose((fft2 / h_expanded).real, fft_ref.real, atol=0.05).all()
 
 
 @cocotb.test()
 async def test_sync_long_no_invalid(dut):
-    inm = AXISMonitor(dut, 'signal', dut.clk_in)
-    outm = AXISMonitor(dut, 'lts', dut.clk_in)
-    ind = AXISDriver(dut, 'signal', dut.clk_in, False)
+    inm = AXISMonitor(dut, 'fft', dut.clk_in)
+    outm = AXISMonitor(dut, 'csi', dut.clk_in)
+    ind = AXISDriver(dut, 'fft', dut.clk_in, False)
     # Setup the DUT
     cocotb.start_soon(Clock(dut.clk_in, 10, units="ns").start())
     await set_ready(dut, 1)
@@ -174,40 +176,45 @@ async def test_sync_long_no_invalid(dut):
     signal = np.fromfile(samples_path, dtype=np.int16)[:1000]
     i = signal[::2]
     q = signal[1::2]
+    ref_lts_loc = 171
+    lts1 = i[ref_lts_loc+32:ref_lts_loc+96] + \
+        1j * q[ref_lts_loc+32:ref_lts_loc+96]
+    fft1 = np.fft.fft(lts1) / len(lts1) / 2 / np.pi
+    lts2 = i[ref_lts_loc+96:ref_lts_loc+160] + \
+        1j * q[ref_lts_loc+96:ref_lts_loc+160]
+    fft2 = np.fft.fft(lts2) / len(lts2) / 2 / np.pi
+    lts_ref = np.loadtxt(os.path.join(cwd, "lts.txt")).view(complex)
+    fft_ref = np.fft.fft(lts_ref)
     # Drive the DUT
     await ClockCycles(dut.clk_in, 1)
-    ind.append({'type': 'burst', 'contents': {'data': zip(i[160:], q[160:])}})
-    # Test back-pressure
-    await ClockCycles(dut.clk_in, 1000)
+    ind.append({'type': 'burst', 'contents': {
+               'data': list(zip(fft1.real, fft1.imag))}})
+    ind.append({'type': 'burst', 'contents': {
+               'data': list(zip(fft2.real, fft2.imag))}})
+    await ClockCycles(dut.clk_in, 200)
     # Check that the data is what we expect
-    assert inm.transactions == 340, 'Sent the wrong number of samples!'
-    assert outm.transactions == 128, 'Received the wrong number of samples!'
+    assert inm.transactions == 128, 'Sent the wrong number of samples!'
+    assert outm.transactions == 52, 'Received the wrong number of samples!'
     # Check that it worked
-    ref_lts_loc = 171
-    lts1 = np.array(outm.data_i[0]) + 1j * np.array(outm.data_q[0])
-    assert (lts1 == i[ref_lts_loc+32:ref_lts_loc+96] +
-            1j * q[ref_lts_loc+32:ref_lts_loc+96]).all()
-    lts2 = np.array(outm.data_i[1]) + 1j * np.array(outm.data_q[1])
-    assert (lts2 == i[ref_lts_loc+96:ref_lts_loc+160] +
-            1j * q[ref_lts_loc+96:ref_lts_loc+160]).all()
-    # Plot the FFTs as a visual check
-    # plt.plot(np.fft.fft(lts1).real, '-o')
-    # plt.plot(np.fft.fft(lts2).real, '-o')
+    h = np.array(outm.data_re) + 1j * np.array(outm.data_im)
+    h_expanded = np.concat(([np.inf], h[:26], [np.inf] * 11, h[26:]))
+    # plt.plot((fft1 / h_expanded).real, '-o')
+    # plt.plot((fft2 / h_expanded).real, '-o')
+    # plt.plot(fft_ref.real, '-o')
     # plt.show()
+    assert np.isclose((fft1 / h_expanded).real, fft_ref.real, atol=0.05).all()
+    assert np.isclose((fft2 / h_expanded).real, fft_ref.real, atol=0.05).all()
 
 
-def sync_long_runner():
-    """Simulate the LTS cross-correlater using the Python runner."""
+def equalizer_runner():
+    """Simulate the equalizer (CSI extractor) using the Python runner."""
     sim = os.getenv("SIM", "icarus")
     proj_path = Path(__file__).resolve().parent.parent
     hdl_path = proj_path / "WaveSense/ip_repo/csi_extractor_1_0/hdl"
     sys.path.append(str(proj_path / "sim" / "model"))
     sources = [
-        hdl_path / "sync_long.sv",
+        hdl_path / "equalizer.sv",
         hdl_path / "pipeline.sv",
-        hdl_path / "complex_to_mag.sv",
-        hdl_path / "lts_xcorr.sv",
-        hdl_path / "complex_multiply.sv",
         hdl_path / "xilinx_true_dual_port_read_first_2_clock_ram.v"
     ]
     build_test_args = ["-Wall"]  # ,"COCOTB_RESOLVE_X=ZEROS"]
@@ -216,7 +223,7 @@ def sync_long_runner():
     runner = get_runner(sim)
     runner.build(
         sources=sources,
-        hdl_toplevel="sync_long",
+        hdl_toplevel="equalizer",
         always=True,
         build_args=build_test_args,
         parameters=parameters,
@@ -225,12 +232,12 @@ def sync_long_runner():
     )
     run_test_args = []
     runner.test(
-        hdl_toplevel="sync_long",
-        test_module="test_sync_long",
+        hdl_toplevel="equalizer",
+        test_module="test_equalizer",
         test_args=run_test_args,
         waves=True,
     )
 
 
 if __name__ == "__main__":
-    sync_long_runner()
+    equalizer_runner()
