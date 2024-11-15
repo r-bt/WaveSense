@@ -76,7 +76,7 @@ module fir_17 #(
         end
     end
 
-    logic signed [C_M00_AXIS_TDATA_WIDTH:0] y_reg [NUM_COEFFS-1:0];
+    logic signed [C_M00_AXIS_TDATA_WIDTH-1:0] y_reg [NUM_COEFFS-1:0];
     assign m00_axis_tdata = y_reg[0];
     logic [NUM_COEFFS-1:0] valid_reg;
     assign m00_axis_tvalid = valid_reg[0];
