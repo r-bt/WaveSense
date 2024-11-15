@@ -10,3 +10,7 @@ vivado -source rebuild.tcl
 ```
 
 and Vivado should make the WaveSense project folder
+
+## TODO
+
+- [ ] Increase coverage of CocoTB test benches
