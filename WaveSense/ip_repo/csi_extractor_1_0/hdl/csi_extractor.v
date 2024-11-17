@@ -92,7 +92,7 @@
 
 	// Sync Short
 
-	wire sync_short_reset;
+	reg sync_short_reset;
 	wire sync_short_enabled = state == S_SYNC_SHORT;
 
 	wire short_preamble_detected;
@@ -109,13 +109,13 @@
 
 	// Sync Long
 
-	wire sync_long_reset;
-	wire sync_long_enable;
+	reg sync_long_reset;
+	reg sync_long_enable;
 	reg [31:0] sample_count;
 
 	wire lts_axis_tvalid, lts_axis_tlast;
 	wire signed [15:0] lts_i_axis_tdata, lts_q_axis_tdata;
-	wire lts_axis_tready
+	wire lts_axis_tready;
 
 	sync_long sync_long_inst (
 		.clk_in(s00_axis_aclk),
@@ -140,18 +140,18 @@
 	wire fft_axis_tready;
 
 	xfft_0 xfft_0_inst (
-		.s00_axis_aclk(s00_axis_aclk),
-		.s00_axis_aresetn(s00_axis_aresetn),
+		.aclk(s00_axis_aclk),
+		.aresetn(s00_axis_aresetn),
 
-		.s00_axis_tvalid(lts_axis_tvalid),
-		.s00_axis_tlast(lts_axis_tlast),
-		.s00_axis_tdata({lts_i_axis_tdata, lts_q_axis_tdata}),
-		.s00_axis_tready(lts_axis_tready),
+		.s_axis_data_tvalid(lts_axis_tvalid),
+		.s_axis_data_tlast(lts_axis_tlast),
+		.s_axis_data_tdata({lts_i_axis_tdata, lts_q_axis_tdata}),
+		.s_axis_data_tready(lts_axis_tready),
 
-		.m00_axis_tvalid(fft_axis_tvalid),
-		.m00_axis_tlast(fft_axis_tlast),
-		.m00_axis_tdata(fft_axis_tdata),
-		.m00_axis_tready(fft_axis_tready)
+		.m_axis_data_tvalid(fft_axis_tvalid),
+		.m_axis_data_tlast(fft_axis_tlast),
+		.m_axis_data_tdata(fft_axis_tdata),
+		.m_axis_data_tready(fft_axis_tready)
 	);
 
 	// Equalizer
@@ -174,7 +174,7 @@
 		.csi_axis_tlast(csi_axis_tlast),
 		.csi_re_axis_tdata(csi_re_axis_tdata),
 		.csi_im_axis_tdata(csi_im_axis_tdata),
-		.csi_axis_tready(csi_axis_tready),
+		.csi_axis_tready(1)  // TODO: Make me AXI!
 	);
 
 	assign trigger = {power_trigger, short_preamble_detected, lts_axis_tlast, csi_axis_tlast};
@@ -258,8 +258,8 @@
 	   if (!m00_axis_aresetn) begin
 	       counter <= 0;
 	       tdata <= 0;
-	   end else if (s00_axis_tvalid) begin
-	       tdata <= s00_axis_tdata;
+	   end else if (downsample_valid) begin
+	       tdata <= downsampled_data;
 	       valid <= 1;
 	       counter <= counter + 1;
 	   end
