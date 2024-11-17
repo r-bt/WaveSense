@@ -1,16 +1,13 @@
-`timescale 1ns / 1ps
-`default_nettype none
-
 module moving_avg 
 #(
     parameter DATA_WIDTH = 32,
     parameter WINDOW_SHIFT = 4
 ) (
-    input logic clk_in,
-    input logic rst_in,
+    input wire clk_in,
+    input wire rst_in,
 
-    input logic signed [DATA_WIDTH - 1 : 0] data_in,
-    input logic data_in_valid,
+    input wire signed [DATA_WIDTH - 1 : 0] data_in,
+    input wire data_in_valid,
 
     output logic signed [DATA_WIDTH - 1 : 0] data_out,
     output logic data_out_valid
@@ -33,7 +30,7 @@ module moving_avg
             is_full <= 0;
             data_out_valid <= 0;
 
-            for (int i = 0; i < WINDOW_SIZE; i++) begin
+            for (int i = 0; i < (1 << WINDOW_SHIFT); i++) begin
                 buffer[i] <= 0;
             end
         end else if (data_in_valid) begin
@@ -61,5 +58,3 @@ module moving_avg
     assign data_out = running_sum >> WINDOW_SHIFT;
 
 endmodule
-
-`default_nettype wire

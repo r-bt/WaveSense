@@ -17,7 +17,7 @@ async def reset(clk, reset_wire, num_cycles, active_val):
 
 
 @cocotb.test
-async def test_moving_avg(dut):
+async def test_delay_sample(dut):
     """
     Ensures that the complex_to_mag_sq module is working correctly.
     """
@@ -31,21 +31,22 @@ async def test_moving_avg(dut):
         dut.data_in.value = i
         await RisingEdge(dut.clk_in)
     dut.data_in_valid.value = 0
+    await ClockCycles(dut.clk_in, 10)
 
 
-def moving_avg_runner():
+def delay_sample_runner():
     """Simulate the downsampler using the Python runner."""
     sim = os.getenv("SIM", "icarus")
     proj_path = Path(__file__).resolve().parent.parent
     sys.path.append(str(proj_path / "sim" / "model"))
-    sources = [proj_path / "WaveSense/ip_repo/csi_extractor_1_0/hdl/moving_avg.sv"]
+    sources = [proj_path / "WaveSense/ip_repo/csi_extractor_1_0/hdl/delay_sample.sv"]
     build_test_args = ["-Wall"]  # ,"COCOTB_RESOLVE_X=ZEROS"]
     parameters = {}
     sys.path.append(str(proj_path / "sim"))
     runner = get_runner(sim)
     runner.build(
         sources=sources,
-        hdl_toplevel="moving_avg",
+        hdl_toplevel="delay_sample",
         always=True,
         build_args=build_test_args,
         parameters=parameters,
@@ -54,12 +55,12 @@ def moving_avg_runner():
     )
     run_test_args = []
     runner.test(
-        hdl_toplevel="moving_avg",
-        test_module="test_moving_avg",
+        hdl_toplevel="delay_sample",
+        test_module="test_delay_sample",
         test_args=run_test_args,
         waves=True,
     )
 
 
 if __name__ == "__main__":
-    moving_avg_runner()
+    delay_sample_runner()

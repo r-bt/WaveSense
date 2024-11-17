@@ -22,8 +22,8 @@ module complex_to_mag #(
     logic [DATA_WIDTH-1 : 0] min, max;
 
     always_comb begin
-        abs_i = i_in[DATA_WIDTH-1] ? (~i_in + 1) : i_in;
-        abs_q = q_in[DATA_WIDTH-1] ? (~q_in + 1) : q_in;
+        abs_i = (i_in < 0) ? (~i_in + 1) : i_in;
+        abs_q = (q_in < 0) ? (~q_in + 1) : q_in;
         min = abs_i < abs_q ? abs_i : abs_q;
         max = abs_i > abs_q ? abs_i : abs_q;
     end
