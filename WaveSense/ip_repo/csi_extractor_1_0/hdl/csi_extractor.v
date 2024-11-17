@@ -44,9 +44,36 @@
 		input wire  m00_axis_tready
 	);
 
+	// State machine 
+
+	localparam S_WAIT_POWER_TRIGGER =   0;
+	localparam S_SYNC_SHORT         =   1;
+	localparam S_SYNC_LONG          =   2;
+
+	reg [3:0] state;
+
+	// Downsample
+
+	wire downsample_valid;
+	wire [C_S00_AXIS_TDATA_WIDTH - 1 : 0] downsampled_data;
+
+	wire downsample_ready;
+	
+	downsample downsample_inst (
+		.s00_axis_aclk(s00_axis_aclk),
+		.s00_axis_aresetn(s00_axis_aresetn),
+		.s00_axis_tvalid(s00_axis_tvalid),
+		.s00_axis_tdata(s00_axis_tdata),
+		.s00_axis_tready(s00_axis_tready),
+
+		.m00_axis_tready(downsample_ready),
+		.m00_axis_tvalid(downsample_valid),
+		.m00_axis_tdata(downsampled_data)
+	);
+
 	// Power trigger
 	
-	wire trigger_store;
+	wire power_trigger;
 	
 	power_trigger power_trigger_inst (
         .clock(s00_axis_aclk),
@@ -57,13 +84,168 @@
         .set_addr(0),
         .set_data(0),
 
-        .sample_in(s00_axis_tdata),
-        .sample_in_strobe(s00_axis_tvalid),
+        .sample_in(downsampled_data),
+        .sample_in_strobe(downsample_valid),
 
-        .trigger(trigger_store)
+        .trigger(power_trigger)
     );
-    
-    assign trigger = {1'b1,1'b0,1'b0,trigger_store};
+
+	// Sync Short
+
+	wire sync_short_reset;
+	wire sync_short_enabled = state == S_SYNC_SHORT;
+
+	wire short_preamble_detected;
+
+	sync_short sync_short_inst (
+		.clk_in(s00_axis_aclk),
+		.rst_in(!s00_axis_aresetn | sync_short_reset),
+
+		.sample_in(downsampled_data),
+		.sample_in_valid(downsample_valid && sync_short_enabled),
+
+		.short_preamble_detected(short_preamble_detected)
+	);
+
+	// Sync Long
+
+	wire sync_long_reset;
+	wire sync_long_enable;
+	reg [31:0] sample_count;
+
+	wire lts_axis_tvalid, lts_axis_tlast;
+	wire signed [15:0] lts_i_axis_tdata, lts_q_axis_tdata;
+	wire lts_axis_tready
+
+	sync_long sync_long_inst (
+		.clk_in(s00_axis_aclk),
+		.rst_in(!s00_axis_aresetn | sync_long_reset),
+
+		.signal_axis_tvalid(downsample_valid && sync_long_enable),
+		.signal_i_axis_tdata(downsampled_data[31:16]),
+		.signal_q_axis_tdata(downsampled_data[15:0]),
+		.signal_axis_tready(downsample_ready),
+
+		.lts_axis_tvalid(lts_axis_tvalid),
+		.lts_axis_tlast(lts_axis_tlast),
+		.lts_i_axis_tdata(lts_i_axis_tdata),
+		.lts_q_axis_tdata(lts_q_axis_tdata),
+		.lts_axis_tready(lts_axis_tready)
+	);
+
+	// FFT of LTS
+
+	wire fft_axis_tvalid, fft_axis_tlast;
+	wire [31:0] fft_axis_tdata;
+	wire fft_axis_tready;
+
+	xfft_0 xfft_0_inst (
+		.s00_axis_aclk(s00_axis_aclk),
+		.s00_axis_aresetn(s00_axis_aresetn),
+
+		.s00_axis_tvalid(lts_axis_tvalid),
+		.s00_axis_tlast(lts_axis_tlast),
+		.s00_axis_tdata({lts_i_axis_tdata, lts_q_axis_tdata}),
+		.s00_axis_tready(lts_axis_tready),
+
+		.m00_axis_tvalid(fft_axis_tvalid),
+		.m00_axis_tlast(fft_axis_tlast),
+		.m00_axis_tdata(fft_axis_tdata),
+		.m00_axis_tready(fft_axis_tready)
+	);
+
+	// Equalizer
+
+	wire csi_axis_tvalid, csi_axis_tlast;
+	wire signed [15:0] csi_re_axis_tdata, csi_im_axis_tdata;
+	wire csi_axis_tready;
+
+	equalizer equalizer_inst (
+		.clk_in(s00_axis_aclk),
+		.rst_in(!s00_axis_aresetn),
+
+		.fft_axis_tvalid(fft_axis_tvalid),
+		.fft_axis_tlast(fft_axis_tlast),
+		.fft_re_axis_tdata(fft_axis_tdata[31:16]),
+		.fft_im_axis_tdata(fft_axis_tdata[15:0]),
+		.fft_axis_tready(fft_axis_tready),
+
+		.csi_axis_tvalid(csi_axis_tvalid),
+		.csi_axis_tlast(csi_axis_tlast),
+		.csi_re_axis_tdata(csi_re_axis_tdata),
+		.csi_im_axis_tdata(csi_im_axis_tdata),
+		.csi_axis_tready(csi_axis_tready),
+	);
+
+	assign trigger = {power_trigger, short_preamble_detected, lts_axis_tlast, csi_axis_tlast};
+
+	// State machine to control flow
+
+	always @(posedge s00_axis_aclk) begin
+		if (!s00_axis_aresetn) begin
+			state <= S_WAIT_POWER_TRIGGER;
+
+			sync_short_reset <= 0; 
+
+			sync_long_reset <= 0;
+			sync_long_enable <= 0;
+
+			sample_count <= 0;
+		end else begin
+			case (state)
+
+				S_WAIT_POWER_TRIGGER: begin
+					sync_long_enable <= 0;
+
+					if (power_trigger) begin
+						sync_short_reset <= 1;
+						state <= S_SYNC_SHORT;
+					end
+				end
+
+				S_SYNC_SHORT: begin
+					if (sync_short_reset) begin
+						sync_short_reset <= 0;
+					end
+
+					if (~power_trigger) begin
+                    // power level drops before finding STS
+                    	state <= S_WAIT_POWER_TRIGGER;
+                	end
+
+					if (short_preamble_detected) begin
+						sync_long_reset <= 1;
+						sync_long_enable <= 1;
+
+						sample_count <= 0;
+						state <= S_SYNC_LONG;
+                	end
+				end
+
+				S_SYNC_LONG: begin
+					if (sync_long_reset) begin
+                    	sync_long_reset <= 0;
+               		end
+
+					if (downsample_valid) begin
+						sample_count <= sample_count + 1;
+					end
+
+					if (sample_count > 320) begin
+						state <= S_WAIT_POWER_TRIGGER;
+					end
+
+					if (~power_trigger) begin
+						state <= S_WAIT_POWER_TRIGGER;
+					end
+
+					if (lts_axis_tlast) begin
+						state <= S_WAIT_POWER_TRIGGER;
+					end
+				end
+			endcase
+		end
+	end
 	
 	// DMA related
 	
@@ -87,7 +269,7 @@
     assign m00_axis_tvalid = valid;
     assign m00_axis_tlast = counter == 0;
     
-    assign s00_axis_tready = m00_axis_tready;
+    // assign s00_axis_tready = m00_axis_tready;
 	// User logic ends
 
 	endmodule
