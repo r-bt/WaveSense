@@ -10,3 +10,5 @@ vivado/src/constraints/.Xil/
 sim_build/
 __pycache__/
 .DS_Store
+
+WaveSense/WaveSense

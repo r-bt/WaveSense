@@ -2,7 +2,7 @@
   "schema": "xilinx.com:schema:json_instance:1.0",
   "ip_inst": {
     "xci_name": "xfft_0",
-    "cell_name": "xfft_0_inst",
+    "cell_name": "csi_extractor_inst/xfft_0_inst",
     "component_reference": "xilinx.com:ip:xfft:9.1",
     "ip_revision": "12",
     "gen_directory": "../../../../WaveSense/WaveSense.tmp/csi_extractor_v1_0_project/csi_extractor_v1_0_project.gen/sources_1/ip/xfft_0",
