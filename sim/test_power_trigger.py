@@ -37,8 +37,8 @@ async def sample_data_test(dut):
     Passes sample data from OpenOFDM to the power_trigger module
     """
     # Setup the DUT
-    cocotb.start_soon(Clock(dut.clock, 10, units="ns").start())
-    await reset(dut.clock, dut.reset, 1, 1)
+    cocotb.start_soon(Clock(dut.clk_in, 10, units="ns").start())
+    await reset(dut.clk_in, dut.rst_in, 1, 1)
     # Read the samples
     wave = np.fromfile(samples_path, dtype=np.uint16)
     n_samples = len(wave) // 2
@@ -50,13 +50,11 @@ async def sample_data_test(dut):
     for i in range(n_samples):
         values.append((imag[i].astype(np.uint32) << 16) | real[i].astype(np.uint32))
     # Send the values to the DUT
-    dut.enable.value = 1
-    dut.sample_in_strobe.value = 1
+    dut.signal_valid_in.value = 1
     for i in range(n_samples):
-        dut.sample_in.value = int(values[i])
-        await RisingEdge(dut.clock)
-    dut.sample_in_strobe.value = 0
-    dut.enable.value = 0
+        dut.signal_data_in.value = int(values[i])
+        await RisingEdge(dut.clk_in)
+    dut.signal_valid_in.value = 0
 
 
 """the code below should largely remain unchanged in structure, though the specific files and things
@@ -64,14 +62,13 @@ specified should get updated for different simulations.
 """
 
 
-def counter_runner():
-    """Simulate the counter using the Python runner."""
+def power_trigger_runner():
+    """Simulate the power trigger using the Python runner."""
     sim = os.getenv("SIM", "icarus")
     proj_path = Path(__file__).resolve().parent.parent
     sys.path.append(str(proj_path / "sim" / "model"))
     sources = [
-        proj_path / "WaveSense/ip_repo/csi_extractor_1_0/hdl/power_trigger.v",
-        proj_path / "WaveSense/ip_repo/csi_extractor_1_0/hdl/setting_reg.v",
+        proj_path / "WaveSense/ip_repo/csi_extractor_1_0/hdl/power_trigger.sv",
     ]  # grow/modify this as needed.
     includes = [
         proj_path / "WaveSense/ip_repo/csi_extractor_1_0/hdl",
@@ -100,4 +97,4 @@ def counter_runner():
 
 
 if __name__ == "__main__":
-    counter_runner()
+    power_trigger_runner()
