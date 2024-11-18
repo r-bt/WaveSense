@@ -32,42 +32,31 @@ module csi_extractor_sv (
     } state_t;
     state_t state;
 
-    // Stage 0: FIR filter + downsample 122.88 MSPS -> 20 MSPS
-    logic filter_valid, filter_ready;
-    logic [31:0] filter_data;
-    fir_compiler_0 fir_inst (
-        .aclk(clk_in),
-        .aresetn(~rst_in),
-
-        .s_axis_data_tvalid(signal_axis_tvalid),
-        .s_axis_data_tdata(signal_axis_tdata),
-        .s_axis_data_tready(signal_axis_tready),
-
-        .m_axis_data_tvalid(filter_valid),
-        .m_axis_data_tdata(filter_data),
-        .m_axis_data_tready(filter_ready)
-    );
-
+    // Stage 0: Downsample 122.88 MSPS -> 20 MSPS
     logic downsample_valid, downsample_ready;
     logic [31:0] downsample_data;
     downsample downsample_inst (
-        .clk_in(clk_in),
-        .rst_in(rst_in),
+        .s00_axis_aclk(clk_in),
+        .s00_axis_aresetn(~rst_in),
+        .s00_axis_tvalid(signal_axis_tvalid),
+        .s00_axis_tdata(signal_axis_tdata),
+        .s00_axis_tready(signal_axis_tready),
 
-        .signal_axis_tvalid(filter_valid),
-        .signal_axis_tdata(filter_data),
-        .signal_axis_tready(filter_ready),
-
-        .downsample_axis_tready(downsample_ready),
-        .downsample_axis_tvalid(downsample_valid),
-        .downsample_axis_tdata(downsample_data)
+        .m00_axis_aclk(clk_in),
+        .m00_axis_aresetn(~rst_in),
+        .m00_axis_tready(downsample_ready),
+        .m00_axis_tvalid(downsample_valid),
+        .m00_axis_tdata(downsample_data)
     );
-    assign downsample_valid_out = downsample_valid;
+    // For debugging
+    assign downsample_valid_out = downsample_valid && state != WAIT_POWER_TRIGGER;
     assign downsample_data_out = downsample_data;
 
     // Stage 1: Power trigger
     logic power_trigger;
-    power_trigger power_trigger_inst (
+    power_trigger #(
+        .POWER_THRESH(2000)
+    ) power_trigger_inst (
         .clk_in(clk_in),
         .rst_in(rst_in),
 
