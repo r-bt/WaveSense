@@ -6,7 +6,7 @@
  *
  * Top-level module that extracts CSI from an 802.11 OFDM signal.
  */
-module csi_extractor (
+module csi_extractor_sv (
     input wire clk_in,
     input wire rst_in,
 
@@ -16,7 +16,7 @@ module csi_extractor (
 
     output logic csi_axis_tvalid, csi_axis_tlast,
     output logic [31:0] csi_axis_tdata,
-    input logic csi_axis_tready,
+    input wire csi_axis_tready,
 
     // For debugging
     input wire [3:0] sw_in,
@@ -79,7 +79,7 @@ module csi_extractor (
     // Stage 3: Detect the long preamble
     logic sync_long_rst;
     logic [15:0] sample_cnt;
-    logic lts_axis_tvalid, lts_axis_tlast,
+    logic lts_axis_tvalid, lts_axis_tlast;
     logic [15:0] lts_i_axis_tdata, lts_q_axis_tdata;
     logic lts_axis_tready;
     sync_long sync_long_inst (
@@ -164,6 +164,14 @@ module csi_extractor (
                     state == SYNC_LONG
                 };
             end
+            4'b0100: begin
+                led_out = {
+                    signal_axis_tready,
+                    csi_axis_tready,
+                    downsample_ready,
+                    lts_axis_tready
+                };
+            end
             default: begin
                 led_out = sample_cnt[3:0];
             end
@@ -182,7 +190,6 @@ module csi_extractor (
             case (state)
                 WAIT_POWER_TRIGGER: begin
                     if (power_trigger) begin
-                    fft_axis_tlast
                         sync_short_rst <= 1;
                         state <= SYNC_SHORT;
                     end
