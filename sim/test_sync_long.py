@@ -140,8 +140,23 @@ async def test_sync_long_with_invalid(dut):
     # Drive the DUT
     await ClockCycles(dut.clk_in, 1)
     ind.append({'type': 'burst', 'contents': {'data': zip(i[160:], q[160:])}})
-    # Test back-pressure
-    await ClockCycles(dut.clk_in, 1000)
+    await ClockCycles(dut.clk_in, 100)
+    await set_ready(dut, 0)
+    await ClockCycles(dut.clk_in, 100)
+    await set_ready(dut, 1)
+    await ClockCycles(dut.clk_in, 15)
+    await set_ready(dut, 0)
+    await ClockCycles(dut.clk_in, 49)
+    await set_ready(dut, 1)
+    await ClockCycles(dut.clk_in, 17)
+    await set_ready(dut, 0)
+    await ClockCycles(dut.clk_in, 49)
+    await set_ready(dut, 1)
+    await ClockCycles(dut.clk_in, 12)
+    await set_ready(dut, 0)
+    await ClockCycles(dut.clk_in, 49)
+    await set_ready(dut, 1)
+    await ClockCycles(dut.clk_in, 500)
     # Check that the data is what we expect
     assert inm.transactions == 340, 'Sent the wrong number of samples!'
     assert outm.transactions == 128, 'Received the wrong number of samples!'
@@ -178,10 +193,26 @@ async def test_sync_long_no_invalid(dut):
     await ClockCycles(dut.clk_in, 1)
     ind.append({'type': 'burst', 'contents': {'data': zip(i[160:], q[160:])}})
     # Test back-pressure
-    await ClockCycles(dut.clk_in, 1000)
+    await ClockCycles(dut.clk_in, 100)
+    await set_ready(dut, 0)
+    await ClockCycles(dut.clk_in, 100)
+    await set_ready(dut, 1)
+    await ClockCycles(dut.clk_in, 15)
+    await set_ready(dut, 0)
+    await ClockCycles(dut.clk_in, 49)
+    await set_ready(dut, 1)
+    await ClockCycles(dut.clk_in, 17)
+    await set_ready(dut, 0)
+    await ClockCycles(dut.clk_in, 49)
+    await set_ready(dut, 1)
+    await ClockCycles(dut.clk_in, 12)
+    await set_ready(dut, 0)
+    await ClockCycles(dut.clk_in, 49)
+    await set_ready(dut, 1)
+    await ClockCycles(dut.clk_in, 500)
     # Check that the data is what we expect
     assert inm.transactions == 340, 'Sent the wrong number of samples!'
-    assert outm.transactions == 128, 'Received the wrong number of samples!'
+    assert len(outm.data_i) == 3 and outm.transactions == 128, 'Received the wrong number of samples!'
     # Check that it worked
     ref_lts_loc = 171
     lts1 = np.array(outm.data_i[0]) + 1j * np.array(outm.data_q[0])
@@ -208,7 +239,8 @@ def sync_long_runner():
         hdl_path / "complex_to_mag.sv",
         hdl_path / "lts_xcorr.sv",
         hdl_path / "complex_multiply.sv",
-        hdl_path / "xilinx_true_dual_port_read_first_2_clock_ram.v"
+        hdl_path / "xilinx_true_dual_port_read_first_2_clock_ram.v",
+        hdl_path / "bram_fifo.sv",
     ]
     build_test_args = ["-Wall"]  # ,"COCOTB_RESOLVE_X=ZEROS"]
     parameters = {}

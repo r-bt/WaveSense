@@ -51,7 +51,9 @@ module sync_long #(
 
     // BRAM I/O addresses
     logic [$clog2(INPUT_BUF_LEN)-1:0] signal_waddr, lts_raddr;
-    logic lts_valid, lts_last;
+    logic lts_valid, lts_valid_piped;
+    logic lts_last, lts_last_piped;
+    logic [15:0] lts_i_data, lts_q_data;
 
     xilinx_true_dual_port_read_first_2_clock_ram #(
         .RAM_WIDTH(32),
@@ -75,7 +77,7 @@ module sync_long #(
         .enb(1'b1),
         .rstb(rst_in),
         .regceb(1'b1),
-        .doutb({lts_i_axis_tdata, lts_q_axis_tdata})
+        .doutb({lts_i_data, lts_q_data})
     );
     pipeline #(
         .WIDTH(2),
@@ -83,8 +85,17 @@ module sync_long #(
     ) valid_last_pipe (
         .clk_in(clk_in),
         .rst_in(rst_in),
-        .val_in({lts_valid, lts_last}),
-        .val_out({lts_axis_tvalid, lts_axis_tlast})
+        .val_in({lts_valid && lts_axis_tready, lts_last}),
+        .val_out({lts_valid_piped, lts_last_piped})
+    );
+    bram_fifo bram_fifo_inst (
+        .clk_in(clk_in),
+        .rst_in(rst_in),
+        .s_axis_tvalid(lts_valid_piped),
+        .s_axis_tdata({lts_i_data, lts_q_data, lts_last_piped}),
+        .m_axis_tvalid(lts_axis_tvalid),
+        .m_axis_tdata({lts_i_axis_tdata, lts_q_axis_tdata, lts_axis_tlast}),
+        .m_axis_tready(lts_axis_tready)
     );
 
     // Cross-correlation control/data signals
@@ -132,7 +143,6 @@ module sync_long #(
             lts_last <= 0;
         end else begin
             // Always write to the BRAM when valid
-            // TODO: Deal with overflow here
             if (signal_axis_tvalid && signal_waddr != INPUT_BUF_LEN - 1) begin
                 signal_waddr <= signal_waddr + 1;
             end
@@ -199,13 +209,12 @@ module sync_long #(
                     end
                 end
                 // Output the LTS sequence
-                // TODO: Deal with the ready signal in here
                 OUTPUT: begin
                     if (stage_cnt == 2 * LTS_WIN_LEN - 1) begin
                         state <= WAIT_FOR_RESET;
                         lts_valid <= 0;
                         lts_last <= 0;
-                    end else begin
+                    end else if (lts_axis_tready) begin
                         stage_cnt <= stage_cnt + 1;
                         lts_raddr <= lts_raddr + 1;
                         // Output two tlast pulses
