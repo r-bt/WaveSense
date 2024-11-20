@@ -102,11 +102,9 @@ async def test_downsample_sinusoid(dut):
     f_out = 20
     n_samples = 10000
     filter_len = 17
-    data_in = (2**16 * (np.sin(np.arange(n_samples) * np.pi / f_in)
-                        - np.sin(np.arange(n_samples) * 3 * np.pi / f_in) / 9
-                        + np.sin(np.arange(n_samples) * 4 * np.pi / f_in) / 25
-                        + np.sin(np.arange(n_samples) * 41 * np.pi / f_in)
-                        + np.sin(np.arange(n_samples) * 39 * np.pi / f_in))).astype(int)
+    data_in = (2**8 * (3 + np.sin(np.arange(n_samples) * np.pi / f_in)
+                        - np.sin(np.arange(n_samples) * 3 * np.pi / f_in)
+                        + np.cos(np.arange(n_samples) * 4 * np.pi / f_in))).astype(int)
     # Drive the DUT
     await ClockCycles(dut.s00_axis_aclk, 1)
     ind.append({'type': 'burst', 'contents': {'data': data_in}})
@@ -130,11 +128,11 @@ async def test_downsample_sinusoid(dut):
     # Check that downsampling worked
     fft_in = np.abs(np.fft.rfft(inm.data)) / inm.transactions / 2 / np.pi
     fft_out = np.abs(np.fft.rfft(outm.data)) / outm.transactions / 2 / np.pi
-    # plt.plot(fft_in)
-    # plt.plot(fft_out / 150)
+    # plt.plot(fft_in[:len(fft_out)] * 9)
+    # plt.plot(fft_out)
     # plt.show()
-    assert np.isclose(fft_in[:len(fft_out)], fft_out / 150,
-                      atol=200, rtol=0.2).all(), 'FFT does not match!'
+    assert np.isclose(fft_in[:len(fft_out)] * 9, fft_out,
+                      atol=100, rtol=0.1).all(), 'FFT does not match!'
 
 
 def downsample_runner():

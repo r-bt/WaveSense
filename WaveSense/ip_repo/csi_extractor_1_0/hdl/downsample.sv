@@ -53,7 +53,7 @@ module downsample #(
         .s00_axis_aresetn(s00_axis_aresetn),
         .s00_axis_tvalid(s00_axis_tvalid),
         .s00_axis_tdata(s00_axis_tdata[15:0]),
-        .s00_axis_tready(s00_axis_tready),
+        .s00_axis_tready(),
 
         .m00_axis_aclk(m00_axis_aclk),
         .m00_axis_aresetn(m00_axis_aresetn),
