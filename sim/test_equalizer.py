@@ -146,7 +146,23 @@ async def test_sync_long_with_invalid(dut):
                'data': list(zip(fft1.real, fft1.imag))}})
     ind.append({'type': 'burst', 'contents': {
                'data': list(zip(fft2.real, fft2.imag))}})
-    await ClockCycles(dut.clk_in, 400)
+    await ClockCycles(dut.clk_in, 60)
+    await set_ready(dut, 0)
+    await ClockCycles(dut.clk_in, 100)
+    await set_ready(dut, 1)
+    await ClockCycles(dut.clk_in, 15)
+    await set_ready(dut, 0)
+    await ClockCycles(dut.clk_in, 49)
+    await set_ready(dut, 1)
+    await ClockCycles(dut.clk_in, 17)
+    await set_ready(dut, 0)
+    await ClockCycles(dut.clk_in, 49)
+    await set_ready(dut, 1)
+    await ClockCycles(dut.clk_in, 12)
+    await set_ready(dut, 0)
+    await ClockCycles(dut.clk_in, 49)
+    await set_ready(dut, 1)
+    await ClockCycles(dut.clk_in, 350)
     # Check that the data is what we expect
     assert inm.transactions == 128, 'Sent the wrong number of samples!'
     assert outm.transactions == 52, 'Received the wrong number of samples!'
@@ -191,7 +207,23 @@ async def test_sync_long_no_invalid(dut):
                'data': list(zip(fft1.real, fft1.imag))}})
     ind.append({'type': 'burst', 'contents': {
                'data': list(zip(fft2.real, fft2.imag))}})
-    await ClockCycles(dut.clk_in, 200)
+    await ClockCycles(dut.clk_in, 20)
+    await set_ready(dut, 0)
+    await ClockCycles(dut.clk_in, 100)
+    await set_ready(dut, 1)
+    await ClockCycles(dut.clk_in, 15)
+    await set_ready(dut, 0)
+    await ClockCycles(dut.clk_in, 49)
+    await set_ready(dut, 1)
+    await ClockCycles(dut.clk_in, 17)
+    await set_ready(dut, 0)
+    await ClockCycles(dut.clk_in, 49)
+    await set_ready(dut, 1)
+    await ClockCycles(dut.clk_in, 12)
+    await set_ready(dut, 0)
+    await ClockCycles(dut.clk_in, 49)
+    await set_ready(dut, 1)
+    await ClockCycles(dut.clk_in, 150)
     # Check that the data is what we expect
     assert inm.transactions == 128, 'Sent the wrong number of samples!'
     assert outm.transactions == 52, 'Received the wrong number of samples!'
@@ -215,7 +247,8 @@ def equalizer_runner():
     sources = [
         hdl_path / "equalizer.sv",
         hdl_path / "pipeline.sv",
-        hdl_path / "xilinx_true_dual_port_read_first_2_clock_ram.v"
+        hdl_path / "xilinx_true_dual_port_read_first_2_clock_ram.v",
+        hdl_path / "bram_fifo.sv",
     ]
     build_test_args = ["-Wall"]  # ,"COCOTB_RESOLVE_X=ZEROS"]
     parameters = {}

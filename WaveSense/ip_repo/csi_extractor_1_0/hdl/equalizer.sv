@@ -73,6 +73,26 @@ module equalizer (
                   tlast_piped, fft_re_piped, fft_im_piped})
     );
 
+    // FIFO for dealing with AXI tready
+    logic valid_fifo, pos_fifo, neg_fifo, tlast_fifo;
+    logic signed [15:0] fft1_re_fifo, fft2_re_fifo;
+    logic signed [15:0] fft1_im_fifo, fft2_im_fifo;
+    bram_fifo #(
+        .WIDTH(67)
+    ) bram_fifo_inst (
+        .clk_in(clk_in),
+        .rst_in(rst_in),
+        .s_axis_tvalid(valid_piped),
+        .s_axis_tdata({pos_piped, neg_piped, tlast_piped,
+                       fft_re_piped, fft_im_piped,
+                       fft_re_cached, fft_im_cached}),
+        .m_axis_tvalid(valid_fifo),
+        .m_axis_tdata({pos_fifo, neg_fifo, tlast_fifo,
+                       fft1_re_fifo, fft1_im_fifo,
+                       fft2_re_fifo, fft2_im_fifo}),
+        .m_axis_tready(fft_axis_tready)
+    );
+
     assign fft_axis_tready = csi_axis_tready || ~csi_axis_tvalid;
 
     always_ff @(posedge clk_in) begin
@@ -84,34 +104,28 @@ module equalizer (
             k_cnt <= 0;
             lts_idx <= 0;
         end else begin
-            if (fft_axis_tvalid && fft_axis_tready) begin
-                if (k_cnt == FFT_LEN - 1) begin
-                    k_cnt <= 0;
-                    lts_idx <= ~lts_idx;
-                end else begin
-                    k_cnt <= k_cnt + 1;
+            if (fft_axis_tready) begin
+                if (fft_axis_tvalid) begin
+                    if (k_cnt == FFT_LEN - 1) begin
+                        k_cnt <= 0;
+                        lts_idx <= ~lts_idx;
+                    end else begin
+                        k_cnt <= k_cnt + 1;
+                    end
                 end
-            end
 
-            csi_axis_tlast <= tlast_piped;
-            if (valid_piped) begin
-                if (pos_piped) begin
-                    csi_axis_tvalid <= 1;
-                    csi_re_axis_tdata <= (fft_re_piped>>>1) + (fft_re_cached>>>1);
-                    csi_im_axis_tdata <= (fft_im_piped>>>1) + (fft_im_cached>>>1);
-                end else if (neg_piped) begin
-                    csi_axis_tvalid <= 1;
-                    csi_re_axis_tdata <= ((-fft_re_piped)>>>1) + ((-fft_re_cached)>>>1);
-                    csi_im_axis_tdata <= ((-fft_im_piped)>>>1) + ((-fft_im_cached)>>>1);
+                csi_axis_tlast <= tlast_fifo;
+                if (pos_fifo) begin
+                    csi_axis_tvalid <= valid_fifo;
+                    csi_re_axis_tdata <= (fft1_re_fifo>>>1) + (fft2_re_fifo>>>1);
+                    csi_im_axis_tdata <= (fft1_im_fifo>>>1) + (fft2_im_fifo>>>1);
+                end else if (neg_fifo) begin
+                    csi_axis_tvalid <= valid_fifo;
+                    csi_re_axis_tdata <= ((-fft1_re_fifo)>>>1) + ((-fft2_re_fifo)>>>1);
+                    csi_im_axis_tdata <= ((-fft1_im_fifo)>>>1) + ((-fft2_im_fifo)>>>1);
                 end else begin
                     csi_axis_tvalid <= 0;
-                    csi_re_axis_tdata <= 0;
-                    csi_im_axis_tdata <= 0;
                 end
-            end else begin
-                csi_axis_tvalid <= 0;
-                csi_re_axis_tdata <= 0;
-                csi_im_axis_tdata <= 0;
             end
         end
     end
