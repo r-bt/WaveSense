@@ -203,6 +203,12 @@ async def test_lts_extractor_no_invalid(dut):
     assert inm.transactions == len(i), 'Sent the wrong number of samples!'
     assert outm.transactions == 128 * 15, 'Received the wrong number of samples!'
     # Check (visually) that it worked
+    lts_arr = np.array([
+        np.array(outm.data_i[i]) + 1j * np.array(outm.data_q[i])
+        for i in range(30)
+    ])
+    np.save(os.path.join(cwd, "lts_arr.npy"), lts_arr)
+    np.load()
     # for i in range(15):
     #     lts1 = np.array(outm.data_i[2 * i]) + 1j * np.array(outm.data_q[0])
     #     lts2 = np.array(outm.data_i[2 * i + 1]) + 1j * np.array(outm.data_q[1])
