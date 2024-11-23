@@ -212,19 +212,12 @@ def sync_short_runner():
         proj_path / "WaveSense/ip_repo/csi_extractor_1_0/src/fft-core/longbimpy.v",
         proj_path / "WaveSense/ip_repo/csi_extractor_1_0/src/fft-core/qtrstage.v",
     ]
-    includes = [
-        proj_path / "WaveSense/ip_repo/csi_extractor_1_0/src/fft-core/cmem_8.hex",
-        proj_path / "WaveSense/ip_repo/csi_extractor_1_0/src/fft-core/cmem_16.hex",
-        proj_path / "WaveSense/ip_repo/csi_extractor_1_0/src/fft-core/cmem_32.hex",
-        proj_path / "WaveSense/ip_repo/csi_extractor_1_0/src/fft-core/cmem_64.hex",
-    ]
     build_test_args = ["-Wall"]  # ,"COCOTB_RESOLVE_X=ZEROS"]
     parameters = {}
     sys.path.append(str(proj_path / "sim"))
     runner = get_runner(sim)
     runner.build(
         sources=sources,
-        includes=includes,
         hdl_toplevel="fftmain",
         always=True,
         build_args=build_test_args,
