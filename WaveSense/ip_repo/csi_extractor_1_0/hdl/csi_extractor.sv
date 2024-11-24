@@ -24,14 +24,28 @@ module csi_extractor_sv (
 );
 
     // Stage 0: Downsample 122.88 MSPS -> 20 MSPS
+    logic filter_axis_tvalid, filter_axis_tready;
+    logic [31:0] filter_axis_tdata;
+    fir_compiler_0 fir_inst (
+        .aclk(clk_in),
+        .aresetn(~rst_in),
+
+        .s_axis_data_tvalid(signal_axis_tvalid),
+        .s_axis_data_tdata(signal_axis_tdata),
+        .s_axis_data_tready(signal_axis_tready),
+
+        .m_axis_data_tvalid(filter_axis_tvalid),
+        .m_axis_data_tdata(filter_axis_tdata),
+        .m_axis_data_tready(filter_axis_tready)
+    );
     logic downsample_axis_tvalid, downsample_axis_tready;
     logic [31:0] downsample_axis_tdata;
     downsample downsample_inst (
         .s00_axis_aclk(clk_in),
         .s00_axis_aresetn(~rst_in),
-        .s00_axis_tvalid(signal_axis_tvalid),
-        .s00_axis_tdata(signal_axis_tdata),
-        .s00_axis_tready(signal_axis_tready),
+        .s00_axis_tvalid(filter_axis_tvalid),
+        .s00_axis_tdata(filter_axis_tdata),
+        .s00_axis_tready(filter_axis_tready),
 
         .m00_axis_aclk(clk_in),
         .m00_axis_aresetn(~rst_in),

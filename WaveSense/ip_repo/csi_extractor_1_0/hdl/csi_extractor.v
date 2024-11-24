@@ -67,11 +67,11 @@
 	// Generate a tlast signal
 	reg [7:0] cnt;
 	assign m00_axis_tstrb = 4'b1111;
-	assign m00_axis_tlast = cnt == 8'hFF;
+	assign m00_axis_tlast = (cnt == 8'hFF && csi_axis_tlast && m00_axis_tvalid);
 	always @(posedge s00_axis_aclk) begin
 		if (~s00_axis_aresetn) begin
 			cnt <= 0;
-		end if (csi_axis_tlast) begin
+		end if (csi_axis_tlast && m00_axis_tvalid) begin
 			cnt <= cnt + 1;
 		end
 	end

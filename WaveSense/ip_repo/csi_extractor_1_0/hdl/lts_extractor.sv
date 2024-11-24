@@ -35,7 +35,7 @@ module lts_extractor (
     power_trigger power_trigger_inst (
         .clk_in(clk_in),
         .rst_in(rst_in),
-        .power_thresh_in(100 + (sw_in << 9)),
+        .power_thresh_in(50 + (sw_in << 7)),
 
         .signal_data_in(signal_axis_tdata),
         .signal_valid_in(signal_axis_tvalid),
@@ -79,7 +79,7 @@ module lts_extractor (
 
     // Visualize the state using the LEDs
     assign led_out = {
-        state == WAIT_NEXT_PACKET,
+        state == lts_axis_tvalid,
         state == WAIT_POWER_TRIGGER,
         state == SYNC_SHORT,
         state == SYNC_LONG
