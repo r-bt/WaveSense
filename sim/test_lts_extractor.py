@@ -126,6 +126,7 @@ async def test_lts_extractor_with_invalid(dut):
     ind = AXISDriver(dut, 'signal', dut.clk_in, True)
     # Setup the DUT
     cocotb.start_soon(Clock(dut.clk_in, 10, units="ns").start())
+    dut.sw_in.value = 4  # Threshold ~= 2000
     await set_ready(dut, 1)
     await reset(dut.clk_in, dut.rst_in, 2, 1)
     # Feed in some real data
@@ -181,6 +182,7 @@ async def test_lts_extractor_no_invalid(dut):
     ind = AXISDriver(dut, 'signal', dut.clk_in, False)
     # Setup the DUT
     cocotb.start_soon(Clock(dut.clk_in, 10, units="ns").start())
+    dut.sw_in.value = 4  # Threshold ~= 2000
     await set_ready(dut, 1)
     await reset(dut.clk_in, dut.rst_in, 2, 1)
     # Feed in some real data

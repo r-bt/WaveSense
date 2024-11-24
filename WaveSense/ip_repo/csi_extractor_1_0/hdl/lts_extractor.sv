@@ -16,7 +16,10 @@ module lts_extractor (
 
     output logic lts_axis_tvalid, lts_axis_tlast,
     output logic [31:0] lts_axis_tdata,
-    input wire lts_axis_tready
+    input wire lts_axis_tready,
+
+    input wire [3:0] sw_in,
+    output logic [3:0] led_out
 );
 
     typedef enum {
@@ -29,11 +32,10 @@ module lts_extractor (
 
     // Stage 1: Power trigger
     logic power_trigger;
-    power_trigger #(
-        .POWER_THRESH(2000)
-    ) power_trigger_inst (
+    power_trigger power_trigger_inst (
         .clk_in(clk_in),
         .rst_in(rst_in),
+        .power_thresh_in(100 + (sw_in << 9)),
 
         .signal_data_in(signal_axis_tdata),
         .signal_valid_in(signal_axis_tvalid),
@@ -75,6 +77,13 @@ module lts_extractor (
     );
     assign lts_axis_tdata = {lts_i_axis_tdata, lts_q_axis_tdata};
 
+    // Visualize the state using the LEDs
+    assign led_out = {
+        state == WAIT_NEXT_PACKET,
+        state == WAIT_POWER_TRIGGER,
+        state == SYNC_SHORT,
+        state == SYNC_LONG
+    };
 
     // State machine for control flow
     always_ff @(posedge clk_in) begin

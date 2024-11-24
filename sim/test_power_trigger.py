@@ -51,6 +51,7 @@ async def sample_data_test(dut):
         values.append((imag[i].astype(np.uint32) << 16) | real[i].astype(np.uint32))
     # Send the values to the DUT
     dut.signal_valid_in.value = 1
+    dut.power_thresh_in.value = 100
     for i in range(n_samples):
         dut.signal_data_in.value = int(values[i])
         await RisingEdge(dut.clk_in)

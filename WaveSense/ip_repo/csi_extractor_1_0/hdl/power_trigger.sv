@@ -2,12 +2,12 @@
 `default_nettype none
 
 module power_trigger #(
-    parameter integer POWER_THRESH = 1000,
     parameter integer POWER_WIN_LEN = 80,
     parameter integer SKIP_SAMPLE = 0
 ) (
     input wire clk_in,
     input wire rst_in,
+    input wire [15:0] power_thresh_in,
 
     input wire [31:0] signal_data_in,
     input wire signal_valid_in,
@@ -40,14 +40,14 @@ module power_trigger #(
                 end
 
                 IDLE: begin
-                    if (abs_i >= POWER_THRESH) begin
+                    if (abs_i >= power_thresh_in) begin
                         trigger_out <= 1;
                         state <= PACKET;
                     end
                 end
 
                 PACKET: begin
-                    if (abs_i < POWER_THRESH) begin
+                    if (abs_i < power_thresh_in) begin
                         if (sample_cnt < POWER_WIN_LEN) begin
                             sample_cnt <= sample_cnt + 1;
                         end else begin

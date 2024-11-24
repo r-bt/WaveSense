@@ -45,6 +45,7 @@
 		input wire  m00_axis_tready
 	);
 
+	wire csi_axis_tlast;
 	csi_extractor_sv csi_extractor_inst (
 		.clk_in(s00_axis_aclk),
 		.rst_in(~s00_axis_aresetn),
@@ -53,25 +54,23 @@
 		.signal_axis_tdata(s00_axis_tdata),
 		.signal_axis_tready(s00_axis_tready),
 
-		.csi_axis_tvalid(),
-		.csi_axis_tlast(),
-		.csi_axis_tdata(),
-		.csi_axis_tready(1),  // TODO: Make me AXI!
+		.csi_axis_tvalid(m00_axis_tvalid),
+		.csi_axis_tlast(csi_axis_tlast),
+		.csi_axis_tdata(m00_axis_tdata),
+		.csi_axis_tready(m00_axis_tready),
 
 		.sw_in(sw),
-		.led_out(led),
-		.downsample_valid_out(m00_axis_tvalid),
-		.downsample_data_out(m00_axis_tdata)
+		.led_out(led)
 	);
 
 	// Generate a tlast signal
-	reg [15:0] cnt;
+	reg [7:0] cnt;
 	assign m00_axis_tstrb = 4'b1111;
-	assign m00_axis_tlast = cnt == 16'hFFFF;
+	assign m00_axis_tlast = cnt == 8'hFF;
 	always @(posedge s00_axis_aclk) begin
 		if (~s00_axis_aresetn) begin
 			cnt <= 0;
-		end if (m00_axis_tvalid) begin
+		end if (csi_axis_tlast) begin
 			cnt <= cnt + 1;
 		end
 	end
