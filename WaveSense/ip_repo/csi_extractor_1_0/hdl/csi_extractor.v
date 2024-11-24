@@ -20,6 +20,7 @@
 		// Users to add ports here
 
 		input wire [3:0] sw,
+		input wire [3:0] btn,
 		output wire [3:0] led,
 
 		// User ports ends
@@ -50,7 +51,7 @@
 		.clk_in(s00_axis_aclk),
 		.rst_in(~s00_axis_aresetn),
 
-		.signal_axis_tvalid(s00_axis_tvalid),
+		.signal_axis_tvalid(s00_axis_tvalid && btn[0]),
 		.signal_axis_tdata(s00_axis_tdata),
 		.signal_axis_tready(s00_axis_tready),
 

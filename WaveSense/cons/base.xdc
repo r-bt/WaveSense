@@ -24,6 +24,19 @@ set_property IOSTANDARD LVCMOS18 [ get_ports "sw[2]" ]
 set_property PACKAGE_PIN AV11 [ get_ports "sw[3]" ]
 set_property IOSTANDARD LVCMOS18 [ get_ports "sw[3]" ]
 
+## USER PUSH BUTTON
+set_property PACKAGE_PIN AV12 [ get_ports "btn[0]" ]
+set_property IOSTANDARD LVCMOS18 [ get_ports "btn[0]" ]
+
+set_property PACKAGE_PIN AV10 [ get_ports "btn[1]" ]
+set_property IOSTANDARD LVCMOS18 [ get_ports "btn[1]" ]
+
+set_property PACKAGE_PIN AW9 [ get_ports "btn[2]" ]
+set_property IOSTANDARD LVCMOS18 [ get_ports "btn[2]" ]
+
+set_property PACKAGE_PIN AT12 [ get_ports "btn[3]" ]
+set_property IOSTANDARD LVCMOS18 [ get_ports "btn[3]" ]
+
 
 set_property BITSTREAM.CONFIG.UNUSEDPIN PULLUP [current_design]
 set_property BITSTREAM.CONFIG.OVERTEMPSHUTDOWN ENABLE [current_design]

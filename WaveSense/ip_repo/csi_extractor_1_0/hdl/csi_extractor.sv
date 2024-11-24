@@ -44,8 +44,8 @@ module csi_extractor_sv (
     logic lts_axis_tvalid, lts_axis_tlast, lts_axis_tready;
     logic [15:0] lts_i_axis_tdata, lts_q_axis_tdata;
     lts_extractor lts_extractor_inst (
-        .clk_in(s00_axis_aclk),
-        .rst_in(~s00_axis_aresetn),
+        .clk_in(clk_in),
+        .rst_in(rst_in),
 
         .signal_axis_tvalid(downsample_axis_tvalid),
         .signal_axis_tdata(downsample_axis_tdata),
