@@ -24,7 +24,8 @@ class AXISMonitor(BusMonitor):
         if name == 'signal':
             self._signals = ['axis_tvalid', 'axis_tready', 'axis_tdata']
         else:
-            self._signals = ['axis_tvalid', 'axis_tready', 'axis_tlast', 'axis_tdata']
+            self._signals = ['axis_tvalid',
+                             'axis_tready', 'axis_tlast', 'axis_tdata']
         BusMonitor.__init__(self, dut, name, clk, callback=callback)
         self.clock = clk
         self.transactions = 0
@@ -80,7 +81,8 @@ class AXISDriver(BusDriver):
         if value['type'] == 'single':
             await FallingEdge(self.clock)
             i, q = value['contents']['data']
-            self.bus.axis_tdata.value = int((np.int32(i) << 16) | (np.int32(q) & 0xFFFF))
+            self.bus.axis_tdata.value = int(
+                (np.int32(i) << 16) | (np.int32(q) & 0xFFFF))
             self.bus.axis_tvalid.value = 1
             await ReadOnly()
             while not self.bus.axis_tready.value:
@@ -89,7 +91,8 @@ class AXISDriver(BusDriver):
         else:
             for i, q in value['contents']['data']:
                 await FallingEdge(self.clock)
-                self.bus.axis_tdata.value = int((np.int32(i) << 16) | (np.int32(q) & 0xFFFF))
+                self.bus.axis_tdata.value = int(
+                    (np.int32(i) << 16) | (np.int32(q) & 0xFFFF))
                 self.bus.axis_tvalid.value = 1
                 await ReadOnly()
                 while not self.bus.axis_tready.value:
@@ -150,11 +153,18 @@ async def test_lts_extractor_with_invalid(dut):
     await set_ready(dut, 0)
     await ClockCycles(dut.clk_in, 49)
     await set_ready(dut, 1)
-    await ClockCycles(dut.clk_in, 50000)
+    await ClockCycles(dut.clk_in, 90000)
     # Check that the data is what we expect
     assert inm.transactions == len(i), 'Sent the wrong number of samples!'
     assert outm.transactions == 128 * 15, 'Received the wrong number of samples!'
     # Check (visually) that it worked
+    lts_arr = np.array([
+        np.array(outm.data_i[i]) + 1j * np.array(outm.data_q[i])
+        for i in range(30)
+    ])
+    expected_lts_arr = np.load(os.path.join(cwd, "lts_arr.npy"))
+    assert (lts_arr == expected_lts_arr).all(), 'LTS data is incorrect!'
+    # np.save(os.path.join(cwd, "lts_arr.npy"), lts_arr)
     # for i in range(15):
     #     lts1 = np.array(outm.data_i[2 * i]) + 1j * np.array(outm.data_q[0])
     #     lts2 = np.array(outm.data_i[2 * i + 1]) + 1j * np.array(outm.data_q[1])
@@ -198,7 +208,7 @@ async def test_lts_extractor_no_invalid(dut):
     await set_ready(dut, 0)
     await ClockCycles(dut.clk_in, 49)
     await set_ready(dut, 1)
-    await ClockCycles(dut.clk_in, 40000)
+    await ClockCycles(dut.clk_in, 30000)
     # Check that the data is what we expect
     assert inm.transactions == len(i), 'Sent the wrong number of samples!'
     assert outm.transactions == 128 * 15, 'Received the wrong number of samples!'
@@ -207,7 +217,9 @@ async def test_lts_extractor_no_invalid(dut):
         np.array(outm.data_i[i]) + 1j * np.array(outm.data_q[i])
         for i in range(30)
     ])
-    np.save(os.path.join(cwd, "lts_arr.npy"), lts_arr)
+    expected_lts_arr = np.load(os.path.join(cwd, "lts_arr.npy"))
+    assert (lts_arr == expected_lts_arr).all(), 'LTS data is incorrect!'
+    # np.save(os.path.join(cwd, "lts_arr.npy"), lts_arr)
     # for i in range(15):
     #     lts1 = np.array(outm.data_i[2 * i]) + 1j * np.array(outm.data_q[0])
     #     lts2 = np.array(outm.data_i[2 * i + 1]) + 1j * np.array(outm.data_q[1])

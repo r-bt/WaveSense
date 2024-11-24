@@ -78,18 +78,23 @@ module sync_short(
     logic sample_delayed_conj_valid;
 
     logic [31:0] sample_in_prev;
+    logic sample_in_valid_prev;
 
     always_ff @(posedge clk_in) begin
         if (rst_in) begin
             sample_delayed_conj <= 0;
             sample_delayed_conj_valid <= 0;
+            sample_in_valid_prev <= 0;
         end else begin
             sample_delayed_conj_valid <= sample_delayed_valid;
 
             sample_delayed_conj[31:16] <= sample_delayed[31:16];
             sample_delayed_conj[15:0] <= ~sample_delayed[15:0] + 1;
 
-            sample_in_prev <= sample_in;
+            if (sample_in_valid) begin
+                sample_in_prev <= sample_in;
+            end
+            sample_in_valid_prev <= sample_in_valid;
         end
     end
 
@@ -103,7 +108,7 @@ module sync_short(
         .q0_in(sample_in_prev[15:0]),
         .i1_in(sample_delayed_conj[31:16]),
         .q1_in(sample_delayed_conj[15:0]),
-        .valid_in(sample_delayed_conj_valid),
+        .valid_in(sample_in_valid_prev),
 
         .i_out(prod[63:32]),
         .q_out(prod[31:0]),
@@ -190,7 +195,7 @@ module sync_short(
 
             if (delay_prod_avg_valid) begin
                 if (delay_prod_avg_mag > prod_thres) begin
-                    if (sample_in[31] == 1) begin
+                    if (sample_in_prev[31] == 1) begin  // TODO: This is wrong
                         neg_count <= neg_count + 1;
                     end else begin
                         pos_count <= pos_count + 1;
