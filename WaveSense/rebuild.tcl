@@ -35,16 +35,6 @@
 proc checkRequiredFiles { origin_dir} {
   set status true
   set files [list \
- "[file normalize "$origin_dir/WaveSense/WaveSense.srcs/utils_1/imports/synth_1/design_1_wrapper.dcp"]"\
-  ]
-  foreach ifile $files {
-    if { ![file isfile $ifile] } {
-      puts " Could not find local file $ifile "
-      set status false
-    }
-  }
-
-  set files [list \
  "[file normalize "$origin_dir/cons/base.xdc"]"\
   ]
   foreach ifile $files {
@@ -168,13 +158,6 @@ set_property -name "sim.central_dir" -value "$proj_dir/${_xil_proj_name_}.ip_use
 set_property -name "sim.ip.auto_export_scripts" -value "1" -objects $obj
 set_property -name "simulator_language" -value "Mixed" -objects $obj
 set_property -name "sim_compile_state" -value "1" -objects $obj
-set_property -name "webtalk.activehdl_export_sim" -value "33" -objects $obj
-set_property -name "webtalk.modelsim_export_sim" -value "33" -objects $obj
-set_property -name "webtalk.questa_export_sim" -value "33" -objects $obj
-set_property -name "webtalk.riviera_export_sim" -value "33" -objects $obj
-set_property -name "webtalk.vcs_export_sim" -value "33" -objects $obj
-set_property -name "webtalk.xcelium_export_sim" -value "1" -objects $obj
-set_property -name "webtalk.xsim_export_sim" -value "33" -objects $obj
 set_property -name "xpm_libraries" -value "XPM_CDC XPM_FIFO XPM_MEMORY" -objects $obj
 
 # Create 'sources_1' fileset (if not found)
@@ -203,7 +186,6 @@ set obj [get_filesets sources_1]
 set obj [get_filesets sources_1]
 set_property -name "dataflow_viewer_settings" -value "min_width=16" -objects $obj
 set_property -name "top" -value "design_1_wrapper" -objects $obj
-set_property -name "top_auto_set" -value "0" -objects $obj
 
 # Create 'constrs_1' fileset (if not found)
 if {[string equal [get_filesets -quiet constrs_1] ""]} {
@@ -236,28 +218,11 @@ set obj [get_filesets sim_1]
 # Set 'sim_1' fileset properties
 set obj [get_filesets sim_1]
 set_property -name "top" -value "design_1_wrapper" -objects $obj
-set_property -name "top_auto_set" -value "0" -objects $obj
 set_property -name "top_lib" -value "xil_defaultlib" -objects $obj
 
 # Set 'utils_1' fileset object
 set obj [get_filesets utils_1]
-# Import local files from the original project
-set files [list \
- [file normalize "${origin_dir}/WaveSense/WaveSense.srcs/utils_1/imports/synth_1/design_1_wrapper.dcp" ]\
-]
-set imported_files ""
-foreach f $files {
-  lappend imported_files [import_files -fileset utils_1 $f]
-}
-
-# Set 'utils_1' fileset file properties for remote files
-# None
-
-# Set 'utils_1' fileset file properties for local files
-set file "synth_1/design_1_wrapper.dcp"
-set file_obj [get_files -of_objects [get_filesets utils_1] [list "*$file"]]
-set_property -name "netlist_only" -value "0" -objects $file_obj
-
+# Empty (no sources present)
 
 # Set 'utils_1' fileset properties
 set obj [get_filesets utils_1]
@@ -772,61 +737,6 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   exclude_bd_addr_seg -offset 0x000800000000 -range 0x000100000000 -target_address_space [get_bd_addr_spaces axi_dma_0/Data_S2MM] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_DDR_HIGH]
   exclude_bd_addr_seg -offset 0xFF000000 -range 0x01000000 -target_address_space [get_bd_addr_spaces axi_dma_0/Data_S2MM] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_LPS_OCM]
 
-  # Perform GUI Layout
-  regenerate_bd_layout -layout_string {
-   "ActiveEmotionalView":"Default View",
-   "Default View_ScaleFactor":"0.377829",
-   "Default View_TopLeft":"-48,-13",
-   "ExpandedHierarchyInLayout":"",
-   "guistr":"# # String gsaved with Nlview 7.7.1 2023-07-26 3bc4126617 VDI=43 GEI=38 GUI=JA:21.0 TLS
-#  -string -flagsOSRD
-preplace port sysref_in -pg 1 -lvl 0 -x -20 -y 410 -defaultsOSRD
-preplace port adc2_clk -pg 1 -lvl 0 -x -20 -y 180 -defaultsOSRD
-preplace port vin2_01 -pg 1 -lvl 0 -x -20 -y 380 -defaultsOSRD
-preplace portBus sw -pg 1 -lvl 0 -x -20 -y 730 -defaultsOSRD
-preplace portBus led -pg 1 -lvl 8 -x 2860 -y 620 -defaultsOSRD
-preplace portBus btn -pg 1 -lvl 0 -x -20 -y 760 -defaultsOSRD
-preplace inst usp_rf_data_converter_0 -pg 1 -lvl 6 -x 2340 -y 410 -defaultsOSRD
-preplace inst zynq_ultra_ps_e_0 -pg 1 -lvl 4 -x 1370 -y 680 -defaultsOSRD
-preplace inst axi_dma_0 -pg 1 -lvl 2 -x 590 -y 620 -defaultsOSRD
-preplace inst clk_wiz_0 -pg 1 -lvl 4 -x 1370 -y 490 -defaultsOSRD
-preplace inst axis_data_fifo_0 -pg 1 -lvl 6 -x 2340 -y 130 -defaultsOSRD
-preplace inst xlconcat_0 -pg 1 -lvl 5 -x 1900 -y 90 -defaultsOSRD
-preplace inst ps8_0_axi_periph -pg 1 -lvl 5 -x 1900 -y 1000 -defaultsOSRD
-preplace inst rst_ps8_0_99M -pg 1 -lvl 1 -x 210 -y 890 -defaultsOSRD
-preplace inst axi_smc -pg 1 -lvl 3 -x 910 -y 630 -defaultsOSRD
-preplace inst proc_sys_reset_0 -pg 1 -lvl 5 -x 1900 -y 280 -defaultsOSRD
-preplace inst csi_extractor_0 -pg 1 -lvl 7 -x 2700 -y 610 -defaultsOSRD
-preplace netloc axis_subset_converter_0_s_axis_tready 1 5 2 2160 550 2530
-preplace netloc btn_1 1 0 7 10J 420 NJ 420 NJ 420 NJ 420 NJ 420 2080J 590 NJ
-preplace netloc clk_wiz_0_clk_out1 1 4 2 1680 170 2130
-preplace netloc clk_wiz_0_locked 1 4 1 1710 320n
-preplace netloc csi_extractor_0_trigger 1 7 1 N 620
-preplace netloc proc_sys_reset_0_peripheral_aresetn 1 5 1 2150 150n
-preplace netloc rst_ps8_0_99M_peripheral_aresetn 1 1 6 400 730 760 540 1060 570 1700 440 2090 580 2540
-preplace netloc sw_1 1 0 7 0J 160 NJ 160 NJ 160 NJ 160 NJ 160 2140J 260 2550J
-preplace netloc usp_rf_data_converter_0_clk_adc2 1 3 4 1070 560 NJ 560 NJ 560 2510
-preplace netloc usp_rf_data_converter_0_m20_axis_tdata 1 4 3 1720 10 NJ 10 2510
-preplace netloc usp_rf_data_converter_0_m20_axis_tvalid 1 5 2 2170 270 2540
-preplace netloc usp_rf_data_converter_0_m21_axis_tdata 1 4 3 1720 570 NJ 570 2520
-preplace netloc xlconcat_0_dout 1 5 1 N 90
-preplace netloc zynq_ultra_ps_e_0_pl_clk0 1 0 7 30 720 390 720 770 720 1070 820 1720 610 2100 610 2560
-preplace netloc zynq_ultra_ps_e_0_pl_resetn0 1 0 5 20 790 390J 800 NJ 800 NJ 800 1670
-preplace netloc adc2_clk_1 1 0 6 NJ 180 NJ 180 NJ 180 NJ 180 NJ 180 2080J
-preplace netloc axi_dma_0_M_AXI_S2MM 1 2 1 N 600
-preplace netloc axi_smc_M00_AXI 1 3 1 N 630
-preplace netloc axis_data_fifo_0_M_AXIS 1 6 1 2560 130n
-preplace netloc csi_extractor_0_M00_AXIS 1 1 7 420 790 NJ 790 NJ 790 NJ 790 NJ 790 NJ 790 2840
-preplace netloc ps8_0_axi_periph_M00_AXI 1 1 5 410 810 NJ 810 NJ 810 NJ 810 2080
-preplace netloc ps8_0_axi_periph_M01_AXI 1 5 1 2110 340n
-preplace netloc sysref_in_1 1 0 6 NJ 410 NJ 410 NJ 410 NJ 410 NJ 410 2120J
-preplace netloc vin2_01_1 1 0 6 NJ 380 NJ 380 NJ 380 NJ 380 NJ 380 NJ
-preplace netloc zynq_ultra_ps_e_0_M_AXI_HPM0_FPD 1 4 1 1710 640n
-preplace netloc zynq_ultra_ps_e_0_M_AXI_HPM1_FPD 1 4 1 1680 660n
-levelinfo -pg 1 -20 210 590 910 1370 1900 2340 2700 2860
-pagesize -pg 1 -db -bbox -sgen -140 0 2970 1190
-"
-}
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -877,7 +787,6 @@ if { $obj != "" } {
 }
 set obj [get_runs synth_1]
 set_property -name "needs_refresh" -value "1" -objects $obj
-set_property -name "incremental_checkpoint" -value "$proj_dir/${_xil_proj_name_}.srcs/utils_1/imports/synth_1/design_1_wrapper.dcp" -objects $obj
 set_property -name "auto_incremental_checkpoint" -value "1" -objects $obj
 set_property -name "strategy" -value "Vivado Synthesis Defaults" -objects $obj
 
