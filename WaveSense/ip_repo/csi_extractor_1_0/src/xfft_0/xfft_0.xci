@@ -2,9 +2,10 @@
   "schema": "xilinx.com:schema:json_instance:1.0",
   "ip_inst": {
     "xci_name": "xfft_0",
+    "cell_name": "csi_extractor_inst/xfft_0_inst",
     "component_reference": "xilinx.com:ip:xfft:9.1",
     "ip_revision": "12",
-    "gen_directory": ".",
+    "gen_directory": "../../../../WaveSense/WaveSense.tmp/csi_extractor_v1_0_project/csi_extractor_v1_0_project.gen/sources_1/ip/xfft_0",
     "parameters": {
       "component_parameters": {
         "Component_Name": [ { "value": "xfft_0", "resolve_type": "user", "usage": "all" } ],
@@ -92,11 +93,11 @@
         "IPCONTEXT": [ { "value": "IP_Flow" } ],
         "IPREVISION": [ { "value": "12" } ],
         "MANAGED": [ { "value": "TRUE" } ],
-        "OUTPUTDIR": [ { "value": "." } ],
+        "OUTPUTDIR": [ { "value": "../../../../WaveSense/WaveSense.tmp/csi_extractor_v1_0_project/csi_extractor_v1_0_project.gen/sources_1/ip/xfft_0" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
         "SHAREDDIR": [ { "value": "." } ],
         "SWVERSION": [ { "value": "2024.1" } ],
-        "SYNTHESISFLOW": [ { "value": "OUT_OF_CONTEXT" } ]
+        "SYNTHESISFLOW": [ { "value": "GLOBAL" } ]
       }
     },
     "boundary": {

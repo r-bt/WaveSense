@@ -2,17 +2,18 @@
   "schema": "xilinx.com:schema:json_instance:1.0",
   "ip_inst": {
     "xci_name": "fir_compiler_0",
+    "cell_name": "csi_extractor_inst/fir_inst",
     "component_reference": "xilinx.com:ip:fir_compiler:7.2",
     "ip_revision": "22",
-    "gen_directory": ".",
+    "gen_directory": "../../../../WaveSense/WaveSense.tmp/csi_extractor_v1_0_project/csi_extractor_v1_0_project.gen/sources_1/ip/fir_compiler_0",
     "parameters": {
       "component_parameters": {
         "Component_Name": [ { "value": "fir_compiler_0", "resolve_type": "user", "usage": "all" } ],
         "GUI_Behaviour": [ { "value": "Coregen", "resolve_type": "user", "usage": "all" } ],
         "CoefficientSource": [ { "value": "Vector", "resolve_type": "user", "usage": "all" } ],
         "CoefficientVector": [ { "value": [
-            "-0.0002080117075788305 -0.0019319507649830719 -0.002937226519262469 -0.004326588065160176 -0.0051672711371284095 -0.005019062101378063 -0.0035767154568100883 -0.0009281389796082299 0.0023613478501919097 0.005333457126111164 0.006894723337460544 0.006201433140789667 0.0030451586612048804 -0.0019177758270619257 -0.0072150249072798845 -0.010929236567170339 -0.011322347741609937 -0.007527322543332624 -0.000059006652998551963 0.009080774115522161 0.01682367147890624 0.019932611525077207 0.016144159097537646 0.005196571505860679 -0.010627719591396084 -0.026706632143446568 -0.03708100855416565 -0.03604658800009165 -0.01990565599852336 0.011647146706817872 0.054963682407976895 0.10295065140251855 0.14658475775497948 0.17706169207906836 0.1879970473607177 0.17706169207906836 0.14658475775497948 0.10295065140251855 0.054963682407976895 0.011647146706817872 -0.01990565599852336 -0.03604658800009165 -0.03708100855416565 -0.026706632143446568 -0.010627719591396084 0.005196571505860679 0.0161441590",
-            "97537646 0.019932611525077207 0.01682367147890624 0.009080774115522161 -0.000059006652998551963 -0.007527322543332624 -0.011322347741609937 -0.010929236567170339 -0.0072150249072798845 -0.0019177758270619257 0.0030451586612048804 0.006201433140789667 0.006894723337460544 0.005333457126111164 0.0023613478501919097 -0.0009281389796082299 -0.0035767154568100883 -0.005019062101378063 -0.0051672711371284095 -0.004326588065160176 -0.002937226519262469 -0.0019319507649830719 -0.0002080117075788305"
+            "-0.00020801170757887762 -0.001931950764983131 -0.0029372265192625104 -0.00432658806516022 -0.005167271137128447 -0.005019062101378088 -0.003576715456810098 -0.0009281389796082295 0.002361347850191935 0.005333457126111206 0.006894723337460584 0.00620143314078971 0.0030451586612049164 -0.001917775827061911 -0.0072150249072798845 -0.010929236567170361 -0.01132234774160997 -0.007527322543332665 -0.00005900665299858666 0.009080774115522144 0.016823671478906243 0.019932611525077228 0.01614415909753768 0.0051965715058607115 -0.010627719591396056 -0.026706632143446547 -0.037081008554165636 -0.03604658800009166 -0.019905655998523397 0.011647146706817841 0.05496368240797688 0.10295065140251856 0.1465847577549795 0.1770616920790684 0.18799704736071776 0.1770616920790684 0.1465847577549795 0.10295065140251856 0.05496368240797688 0.011647146706817841 -0.019905655998523397 -0.03604658800009166 -0.037081008554165636 -0.026706632143446547 -0.010627719591396056 0.0051965715058607115 0.0161441590975376",
+            "8 0.019932611525077228 0.016823671478906243 0.009080774115522144 -0.00005900665299858666 -0.007527322543332665 -0.01132234774160997 -0.010929236567170361 -0.0072150249072798845 -0.001917775827061911 0.0030451586612049164 0.00620143314078971 0.006894723337460584 0.005333457126111206 0.002361347850191935 -0.0009281389796082295 -0.003576715456810098 -0.005019062101378088 -0.005167271137128447 -0.00432658806516022 -0.0029372265192625104 -0.001931950764983131 -0.00020801170757887762"
             ], "value_src": "user", "resolve_type": "user", "usage": "all" } ],
         "Coefficient_File": [ { "value": "no_coe_file_loaded", "resolve_type": "user", "usage": "all" } ],
         "Coefficient_Sets": [ { "value": "1", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
@@ -36,7 +37,7 @@
         "Quantization": [ { "value": "Quantize_Only", "value_src": "user", "resolve_type": "user", "usage": "all" } ],
         "Coefficient_Width": [ { "value": "16", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "BestPrecision": [ { "value": "false", "resolve_type": "user", "format": "bool", "usage": "all" } ],
-        "Coefficient_Fractional_Bits": [ { "value": "16", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "Coefficient_Fractional_Bits": [ { "value": "17", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "Coefficient_Structure": [ { "value": "Inferred", "value_src": "user", "resolve_type": "user", "usage": "all" } ],
         "Data_Sign": [ { "value": "Signed", "resolve_type": "user", "usage": "all" } ],
         "Data_Width": [ { "value": "16", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
@@ -125,10 +126,10 @@
         "C_PX_PATH_SRC": [ { "value": "0,1", "resolve_type": "generated", "usage": "all" } ],
         "C_DATA_PATH_SIGN": [ { "value": "0,0", "resolve_type": "generated", "usage": "all" } ],
         "C_COEF_PATH_SIGN": [ { "value": "0,0", "resolve_type": "generated", "usage": "all" } ],
-        "C_ACCUM_PATH_WIDTHS": [ { "value": "33,33", "resolve_type": "generated", "usage": "all" } ],
+        "C_ACCUM_PATH_WIDTHS": [ { "value": "34,34", "resolve_type": "generated", "usage": "all" } ],
         "C_OUTPUT_WIDTH": [ { "value": "16", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "C_OUTPUT_PATH_WIDTHS": [ { "value": "16,16", "resolve_type": "generated", "usage": "all" } ],
-        "C_ACCUM_OP_PATH_WIDTHS": [ { "value": "33,33", "resolve_type": "generated", "usage": "all" } ],
+        "C_ACCUM_OP_PATH_WIDTHS": [ { "value": "34,34", "resolve_type": "generated", "usage": "all" } ],
         "C_EXT_MULT_CNFG": [ { "value": "none", "resolve_type": "generated", "usage": "all" } ],
         "C_DATA_PATH_PSAMP_SRC": [ { "value": "0", "resolve_type": "generated", "usage": "all" } ],
         "C_OP_PATH_PSAMP_SRC": [ { "value": "0", "resolve_type": "generated", "usage": "all" } ],
@@ -182,11 +183,11 @@
         "IPCONTEXT": [ { "value": "IP_Flow" } ],
         "IPREVISION": [ { "value": "22" } ],
         "MANAGED": [ { "value": "TRUE" } ],
-        "OUTPUTDIR": [ { "value": "." } ],
+        "OUTPUTDIR": [ { "value": "../../../../WaveSense/WaveSense.tmp/csi_extractor_v1_0_project/csi_extractor_v1_0_project.gen/sources_1/ip/fir_compiler_0" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
         "SHAREDDIR": [ { "value": "." } ],
         "SWVERSION": [ { "value": "2024.1" } ],
-        "SYNTHESISFLOW": [ { "value": "OUT_OF_CONTEXT" } ]
+        "SYNTHESISFLOW": [ { "value": "GLOBAL" } ]
       }
     },
     "boundary": {
