@@ -23,7 +23,6 @@ module lts_extractor (
 );
 
     typedef enum {
-        WAIT_NEXT_PACKET,
         WAIT_POWER_TRIGGER,
         SYNC_SHORT,
         SYNC_LONG
@@ -35,7 +34,7 @@ module lts_extractor (
     power_trigger power_trigger_inst (
         .clk_in(clk_in),
         .rst_in(rst_in),
-        .power_thresh_in(50 + (sw_in << 7)),
+        .power_thresh_in(50 + (sw_in << 5)),
 
         .signal_data_in(signal_axis_tdata),
         .signal_valid_in(signal_axis_tvalid),
@@ -94,12 +93,6 @@ module lts_extractor (
             sample_cnt <= 0;
         end else begin
             case (state)
-                WAIT_NEXT_PACKET: begin
-                    if (~power_trigger) begin
-                        state <= WAIT_POWER_TRIGGER;
-                    end
-                end
-
                 WAIT_POWER_TRIGGER: begin
                     if (power_trigger) begin
                         sync_short_rst <= 1;
@@ -129,7 +122,7 @@ module lts_extractor (
                     end
 
                     if (sample_cnt > 320 || ~power_trigger || lts_axis_tlast) begin
-                            state <= WAIT_NEXT_PACKET;
+                            state <= WAIT_POWER_TRIGGER;
                     end
                 end
             endcase

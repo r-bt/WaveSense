@@ -230,7 +230,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>6db38816</spirit:value>
+            <spirit:value>6bc88380</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -252,7 +252,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>6db38816</spirit:value>
+            <spirit:value>6bc88380</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -634,16 +634,6 @@
         <spirit:userFileType>CHECKSUM_41cf070c</spirit:userFileType>
       </spirit:file>
       <spirit:file>
-        <spirit:name>src/fir_compiler_0_2/fir_compiler_0.xci</spirit:name>
-        <spirit:userFileType>xci</spirit:userFileType>
-        <spirit:userFileType>CELL_NAME_csi_extractor_inst/fir_inst</spirit:userFileType>
-      </spirit:file>
-      <spirit:file>
-        <spirit:name>src/xfft_0_1/xfft_0.xci</spirit:name>
-        <spirit:userFileType>xci</spirit:userFileType>
-        <spirit:userFileType>CELL_NAME_csi_extractor_inst/xfft_0_inst</spirit:userFileType>
-      </spirit:file>
-      <spirit:file>
         <spirit:name>hdl/equalizer.sv</spirit:name>
         <spirit:fileType>systemVerilogSource</spirit:fileType>
       </spirit:file>
@@ -651,6 +641,14 @@
         <spirit:name>hdl/csi_extractor.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
         <spirit:userFileType>CHECKSUM_2ca2bc03</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>src/xfft_0/xfft_0.xci</spirit:name>
+        <spirit:userFileType>xci</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>src/fir_compiler_0/fir_compiler_0.xci</spirit:name>
+        <spirit:userFileType>xci</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
     <spirit:fileSet>
@@ -736,22 +734,20 @@
         <spirit:fileType>systemVerilogSource</spirit:fileType>
       </spirit:file>
       <spirit:file>
-        <spirit:name>src/fir_compiler_0_2/fir_compiler_0.xci</spirit:name>
-        <spirit:userFileType>xci</spirit:userFileType>
-        <spirit:userFileType>CELL_NAME_csi_extractor_inst/fir_inst</spirit:userFileType>
-      </spirit:file>
-      <spirit:file>
-        <spirit:name>src/xfft_0_1/xfft_0.xci</spirit:name>
-        <spirit:userFileType>xci</spirit:userFileType>
-        <spirit:userFileType>CELL_NAME_csi_extractor_inst/xfft_0_inst</spirit:userFileType>
-      </spirit:file>
-      <spirit:file>
         <spirit:name>hdl/equalizer.sv</spirit:name>
         <spirit:fileType>systemVerilogSource</spirit:fileType>
       </spirit:file>
       <spirit:file>
         <spirit:name>hdl/csi_extractor.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>src/xfft_0/xfft_0.xci</spirit:name>
+        <spirit:userFileType>xci</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>src/fir_compiler_0/fir_compiler_0.xci</spirit:name>
+        <spirit:userFileType>xci</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
     <spirit:fileSet>
@@ -842,13 +838,13 @@
       <xilinx:xpmLibraries>
         <xilinx:xpmLibrary>XPM_MEMORY</xilinx:xpmLibrary>
       </xilinx:xpmLibraries>
-      <xilinx:coreRevision>21</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2024-11-24T22:05:58Z</xilinx:coreCreationDateTime>
+      <xilinx:coreRevision>22</xilinx:coreRevision>
+      <xilinx:coreCreationDateTime>2024-11-25T15:26:12Z</xilinx:coreCreationDateTime>
     </xilinx:coreExtensions>
     <xilinx:packagingInfo>
       <xilinx:xilinxVersion>2024.1</xilinx:xilinxVersion>
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="6357f13e"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="c2727aaa"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="8b56cdea"/>
       <xilinx:checksum xilinx:scope="ports" xilinx:value="f1c8dd1b"/>
       <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="140b9c35"/>
       <xilinx:checksum xilinx:scope="parameters" xilinx:value="07a12e9e"/>
