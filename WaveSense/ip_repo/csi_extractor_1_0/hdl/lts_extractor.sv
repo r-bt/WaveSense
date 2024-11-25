@@ -78,7 +78,7 @@ module lts_extractor (
 
     // Visualize the state using the LEDs
     assign led_out = {
-        state == lts_axis_tvalid,
+        lts_axis_tvalid,
         state == WAIT_POWER_TRIGGER,
         state == SYNC_SHORT,
         state == SYNC_LONG

@@ -51,7 +51,7 @@
 		.clk_in(s00_axis_aclk),
 		.rst_in(~s00_axis_aresetn),
 
-		.signal_axis_tvalid(s00_axis_tvalid && btn[0]),
+		.signal_axis_tvalid(s00_axis_tvalid),
 		.signal_axis_tdata(s00_axis_tdata),
 		.signal_axis_tready(s00_axis_tready),
 
@@ -64,10 +64,10 @@
 		.led_out(led)
 	);
 
-	// Generate a tlast signal
-	reg [7:0] cnt;
+	// Generate a tlast signal (every 8 CSI samples)
+	reg [2:0] cnt;
 	assign m00_axis_tstrb = 4'b1111;
-	assign m00_axis_tlast = (cnt == 8'hFF && csi_axis_tlast && m00_axis_tvalid);
+	assign m00_axis_tlast = (cnt == 3'b111 && csi_axis_tlast && m00_axis_tvalid);
 	always @(posedge s00_axis_aclk) begin
 		if (~s00_axis_aresetn) begin
 			cnt <= 0;
