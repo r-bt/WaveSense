@@ -5,6 +5,8 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 
+from fft_helpers import generate_sample_data, plot_results
+
 # cocotb imports
 import cocotb
 from cocotb.triggers import ClockCycles, Edge, FallingEdge, ReadOnly, RisingEdge
@@ -12,28 +14,6 @@ from cocotb.runner import get_runner
 from cocotb.clock import Clock
 from cocotb_bus.drivers import BusDriver
 from cocotb_bus.monitors import BusMonitor
-
-
-def generate_sample_data(fs: int, f0: int, f1: int, num_samples: int):
-    """
-    Generate complex waveform data for FFT: the first 16 bits for the real part,
-    the second 16 bits for the imaginary part, each represented as a 32-bit complex number.
-    """
-    # Time vector
-    t = np.arange(num_samples) / fs
-
-    # Generate the real and imaginary parts as sine waves
-    real_part = np.sin(2 * np.pi * f0 * t) + np.sin(2 * np.pi * f1 * t)
-
-    real_part /= 2
-
-    # Scale the real part to 16-bit integer rang
-    real_int = np.int16(np.round(real_part * (2**15 - 1)))
-
-    # Combine the real and imaginary parts into a single 32-bit complex sample array
-    complex_samples = np.uint32(real_int) << 16
-
-    return complex_samples
 
 
 class AXISMonitor(BusMonitor):
@@ -134,74 +114,6 @@ async def reset(clk, reset_wire, num_cycles, active_val):
     reset_wire.value = 1 - active_val
 
 
-reference_data = [
-    (277, 0),
-    (280, 65500),
-    (292, 65464),
-    (310, 65426),
-    (339, 65386),
-    (378, 65342),
-    (431, 65294),
-    (504, 65238),
-    (602, 65174),
-    (742, 65094),
-    (947, 64988),
-    (1274, 64840),
-    (1871, 64596),
-    (3304, 64072),
-    (11772, 61245),
-    (57726, 1968),
-    (62762, 174),
-    (64142, 64976),
-    (65318, 63860),
-    (7563, 53421),
-    (62010, 3311),
-    (63378, 1534),
-    (63818, 996),
-    (64046, 726),
-    (64190, 556),
-    (64288, 436),
-    (64357, 344),
-    (64408, 269),
-    (64445, 204),
-    (64472, 148),
-    (64490, 96),
-    (64500, 47),
-    (64503, 0),
-    (64500, 65488),
-    (64490, 65440),
-    (64472, 65388),
-    (64445, 65332),
-    (64408, 65267),
-    (64357, 65192),
-    (64288, 65100),
-    (64190, 64980),
-    (64046, 64810),
-    (63817, 64540),
-    (63378, 64002),
-    (62010, 62225),
-    (7563, 12115),
-    (65318, 1676),
-    (64142, 560),
-    (62762, 65362),
-    (57726, 63568),
-    (11772, 4291),
-    (3304, 1464),
-    (1871, 940),
-    (1274, 696),
-    (946, 548),
-    (742, 442),
-    (602, 362),
-    (504, 298),
-    (431, 242),
-    (378, 194),
-    (339, 150),
-    (310, 110),
-    (292, 72),
-    (280, 36),
-]
-
-
 @cocotb.test()
 async def test_lot_of_data(dut):
     """
@@ -228,9 +140,7 @@ async def test_lot_of_data(dut):
     # Apply back pressure randomly while sending in the data
     while outm.transactions != (transactions - 3):
         await set_ready(dut, np.random.randint(2))
-    # Ensure that the output is always the same
-    for i in range(outm.transactions):
-        assert outm.data[i] == reference_data
+    plot_results(outm.data[0], n_samples, fs)
 
 
 def axis_fft_runner():

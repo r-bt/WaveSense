@@ -25,8 +25,8 @@ module block_fft (
 
     // FFT input data
 
-    logic [15:0] re_data;
-    logic [15:0] im_data;
+    logic signed [15:0] re_data;
+    logic signed [15:0] im_data;
     logic data_valid;
     logic data_last;
 
