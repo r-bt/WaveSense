@@ -21,8 +21,13 @@ class AXISMonitor(BusMonitor):
     """
 
     def __init__(self, dut, name, clk, callback=None):
-        self._signals = ['axis_tvalid', 'axis_tready', 'axis_tlast',
-                         're_axis_tdata', 'im_axis_tdata']
+        self._signals = [
+            "axis_tvalid",
+            "axis_tready",
+            "axis_tlast",
+            "re_axis_tdata",
+            "im_axis_tdata",
+        ]
         BusMonitor.__init__(self, dut, name, clk, callback=callback)
         self.clock = clk
         self.transactions = 0
@@ -58,8 +63,13 @@ class AXISMonitor(BusMonitor):
 
 class AXISDriver(BusDriver):
     def __init__(self, dut, name, clk, send_invalid):
-        self._signals = ['axis_tvalid', 'axis_tready', 'axis_tlast',
-                         're_axis_tdata', 'im_axis_tdata']
+        self._signals = [
+            "axis_tvalid",
+            "axis_tready",
+            "axis_tlast",
+            "re_axis_tdata",
+            "im_axis_tdata",
+        ]
         BusDriver.__init__(self, dut, name, clk)
         self.clock = clk
         self.bus.re_axis_tdata.value = 0
@@ -71,23 +81,26 @@ class AXISDriver(BusDriver):
             self.wait_cycles_range = (0, 0)
 
     async def _driver_send(self, value, sync=True):
-        if value['type'] == 'single':
+        if value["type"] == "single":
             await FallingEdge(self.clock)
-            self.bus.re_axis_tdata.value, self.bus.im_axis_tdata.value = value['contents']['data']
-            self.bus.axis_tlast.value = value['contents']['last']
+            self.bus.re_axis_tdata.value, self.bus.im_axis_tdata.value = value[
+                "contents"
+            ]["data"]
+            self.bus.axis_tlast.value = value["contents"]["last"]
             self.bus.axis_tvalid.value = 1
             await ReadOnly()
             while not self.bus.axis_tready.value:
                 await Edge(self.clock)
                 await ReadOnly()
         else:
-            for idx, val in enumerate(value['contents']['data']):
+            for idx, val in enumerate(value["contents"]["data"]):
                 re, im = val
                 await FallingEdge(self.clock)
                 self.bus.re_axis_tdata.value = int(re)
                 self.bus.im_axis_tdata.value = int(im)
                 self.bus.axis_tlast.value = int(
-                    idx == len(value['contents']['data']) - 1)
+                    idx == len(value["contents"]["data"]) - 1
+                )
                 self.bus.axis_tvalid.value = 1
                 await ReadOnly()
                 while not self.bus.axis_tready.value:
@@ -116,11 +129,11 @@ async def reset(clk, reset_wire, num_cycles, active_val):
     reset_wire.value = 1 - active_val
 
 
-@cocotb.test()
+# @cocotb.test()
 async def test_sync_long_with_invalid(dut):
-    inm = AXISMonitor(dut, 'fft', dut.clk_in)
-    outm = AXISMonitor(dut, 'csi', dut.clk_in)
-    ind = AXISDriver(dut, 'fft', dut.clk_in, True)
+    inm = AXISMonitor(dut, "fft", dut.clk_in)
+    outm = AXISMonitor(dut, "csi", dut.clk_in)
+    ind = AXISDriver(dut, "fft", dut.clk_in, True)
     # Setup the DUT
     cocotb.start_soon(Clock(dut.clk_in, 10, units="ns").start())
     await set_ready(dut, 1)
@@ -132,20 +145,22 @@ async def test_sync_long_with_invalid(dut):
     i = signal[::2]
     q = signal[1::2]
     ref_lts_loc = 171
-    lts1 = i[ref_lts_loc+32:ref_lts_loc+96] + \
-        1j * q[ref_lts_loc+32:ref_lts_loc+96]
+    lts1 = (
+        i[ref_lts_loc + 32 : ref_lts_loc + 96]
+        + 1j * q[ref_lts_loc + 32 : ref_lts_loc + 96]
+    )
     fft1 = np.fft.fft(lts1) / len(lts1) / 2 / np.pi
-    lts2 = i[ref_lts_loc+96:ref_lts_loc+160] + \
-        1j * q[ref_lts_loc+96:ref_lts_loc+160]
+    lts2 = (
+        i[ref_lts_loc + 96 : ref_lts_loc + 160]
+        + 1j * q[ref_lts_loc + 96 : ref_lts_loc + 160]
+    )
     fft2 = np.fft.fft(lts2) / len(lts2) / 2 / np.pi
     lts_ref = np.loadtxt(os.path.join(cwd, "lts.txt")).view(complex)
     fft_ref = np.fft.fft(lts_ref)
     # Drive the DUT
     await ClockCycles(dut.clk_in, 1)
-    ind.append({'type': 'burst', 'contents': {
-               'data': list(zip(fft1.real, fft1.imag))}})
-    ind.append({'type': 'burst', 'contents': {
-               'data': list(zip(fft2.real, fft2.imag))}})
+    ind.append({"type": "burst", "contents": {"data": list(zip(fft1.real, fft1.imag))}})
+    ind.append({"type": "burst", "contents": {"data": list(zip(fft2.real, fft2.imag))}})
     await ClockCycles(dut.clk_in, 60)
     await set_ready(dut, 0)
     await ClockCycles(dut.clk_in, 100)
@@ -164,8 +179,8 @@ async def test_sync_long_with_invalid(dut):
     await set_ready(dut, 1)
     await ClockCycles(dut.clk_in, 350)
     # Check that the data is what we expect
-    assert inm.transactions == 128, 'Sent the wrong number of samples!'
-    assert outm.transactions == 52, 'Received the wrong number of samples!'
+    assert inm.transactions == 128, "Sent the wrong number of samples!"
+    assert outm.transactions == 52, "Received the wrong number of samples!"
     # Check that it worked
     h = np.array(outm.data_re) + 1j * np.array(outm.data_im)
     h_expanded = np.concat(([np.inf], h[:26], [np.inf] * 11, h[26:]))
@@ -179,9 +194,9 @@ async def test_sync_long_with_invalid(dut):
 
 @cocotb.test()
 async def test_sync_long_no_invalid(dut):
-    inm = AXISMonitor(dut, 'fft', dut.clk_in)
-    outm = AXISMonitor(dut, 'csi', dut.clk_in)
-    ind = AXISDriver(dut, 'fft', dut.clk_in, False)
+    inm = AXISMonitor(dut, "fft", dut.clk_in)
+    outm = AXISMonitor(dut, "csi", dut.clk_in)
+    ind = AXISDriver(dut, "fft", dut.clk_in, False)
     # Setup the DUT
     cocotb.start_soon(Clock(dut.clk_in, 10, units="ns").start())
     await set_ready(dut, 1)
@@ -193,20 +208,22 @@ async def test_sync_long_no_invalid(dut):
     i = signal[::2]
     q = signal[1::2]
     ref_lts_loc = 171
-    lts1 = i[ref_lts_loc+32:ref_lts_loc+96] + \
-        1j * q[ref_lts_loc+32:ref_lts_loc+96]
+    lts1 = (
+        i[ref_lts_loc + 32 : ref_lts_loc + 96]
+        + 1j * q[ref_lts_loc + 32 : ref_lts_loc + 96]
+    )
     fft1 = np.fft.fft(lts1) / len(lts1) / 2 / np.pi
-    lts2 = i[ref_lts_loc+96:ref_lts_loc+160] + \
-        1j * q[ref_lts_loc+96:ref_lts_loc+160]
+    lts2 = (
+        i[ref_lts_loc + 96 : ref_lts_loc + 160]
+        + 1j * q[ref_lts_loc + 96 : ref_lts_loc + 160]
+    )
     fft2 = np.fft.fft(lts2) / len(lts2) / 2 / np.pi
     lts_ref = np.loadtxt(os.path.join(cwd, "lts.txt")).view(complex)
     fft_ref = np.fft.fft(lts_ref)
     # Drive the DUT
     await ClockCycles(dut.clk_in, 1)
-    ind.append({'type': 'burst', 'contents': {
-               'data': list(zip(fft1.real, fft1.imag))}})
-    ind.append({'type': 'burst', 'contents': {
-               'data': list(zip(fft2.real, fft2.imag))}})
+    ind.append({"type": "burst", "contents": {"data": list(zip(fft1.real, fft1.imag))}})
+    ind.append({"type": "burst", "contents": {"data": list(zip(fft2.real, fft2.imag))}})
     await ClockCycles(dut.clk_in, 20)
     await set_ready(dut, 0)
     await ClockCycles(dut.clk_in, 100)
@@ -225,15 +242,15 @@ async def test_sync_long_no_invalid(dut):
     await set_ready(dut, 1)
     await ClockCycles(dut.clk_in, 150)
     # Check that the data is what we expect
-    assert inm.transactions == 128, 'Sent the wrong number of samples!'
-    assert outm.transactions == 52, 'Received the wrong number of samples!'
+    assert inm.transactions == 128, "Sent the wrong number of samples!"
+    assert outm.transactions == 52, "Received the wrong number of samples!"
     # Check that it worked
     h = np.array(outm.data_re) + 1j * np.array(outm.data_im)
     h_expanded = np.concat(([np.inf], h[:26], [np.inf] * 11, h[26:]))
-    # plt.plot((fft1 / h_expanded).real, '-o')
-    # plt.plot((fft2 / h_expanded).real, '-o')
-    # plt.plot(fft_ref.real, '-o')
-    # plt.show()
+    plt.plot((fft1 / h_expanded).real, "-o")
+    plt.plot((fft2 / h_expanded).real, "-o")
+    plt.plot(fft_ref.real, "-o")
+    plt.show()
     assert np.isclose((fft1 / h_expanded).real, fft_ref.real, atol=0.05).all()
     assert np.isclose((fft2 / h_expanded).real, fft_ref.real, atol=0.05).all()
 

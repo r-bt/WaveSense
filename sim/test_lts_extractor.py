@@ -21,11 +21,10 @@ class AXISMonitor(BusMonitor):
     """
 
     def __init__(self, dut, name, clk, callback=None):
-        if name == 'signal':
-            self._signals = ['axis_tvalid', 'axis_tready', 'axis_tdata']
+        if name == "signal":
+            self._signals = ["axis_tvalid", "axis_tready", "axis_tdata"]
         else:
-            self._signals = ['axis_tvalid',
-                             'axis_tready', 'axis_tlast', 'axis_tdata']
+            self._signals = ["axis_tvalid", "axis_tready", "axis_tlast", "axis_tdata"]
         BusMonitor.__init__(self, dut, name, clk, callback=callback)
         self.clock = clk
         self.transactions = 0
@@ -44,13 +43,13 @@ class AXISMonitor(BusMonitor):
             valid = self.bus.axis_tvalid.value
             ready = self.bus.axis_tready.value
             data = self.bus.axis_tdata.value
-            if 'axis_tlast' in self._signals:
+            if "axis_tlast" in self._signals:
                 last = self.bus.axis_tlast.value
             else:
                 last = None
             if valid and ready:
-                i = int(data) >> 16
-                q = int(data) & 0xFFFF
+                q = int(data) >> 16
+                i = int(data) & 0xFFFF
                 self.transactions += 1
                 if i > 2**15:
                     i -= 2**16
@@ -67,7 +66,7 @@ class AXISMonitor(BusMonitor):
 
 class AXISDriver(BusDriver):
     def __init__(self, dut, name, clk, send_invalid):
-        self._signals = ['axis_tvalid', 'axis_tready', 'axis_tdata']
+        self._signals = ["axis_tvalid", "axis_tready", "axis_tdata"]
         BusDriver.__init__(self, dut, name, clk)
         self.clock = clk
         self.bus.axis_tdata.value = 0
@@ -78,21 +77,23 @@ class AXISDriver(BusDriver):
             self.wait_cycles_range = (0, 0)
 
     async def _driver_send(self, value, sync=True):
-        if value['type'] == 'single':
+        if value["type"] == "single":
             await FallingEdge(self.clock)
-            i, q = value['contents']['data']
+            i, q = value["contents"]["data"]
             self.bus.axis_tdata.value = int(
-                (np.int32(i) << 16) | (np.int32(q) & 0xFFFF))
+                (np.int32(i) << 16) | (np.int32(q) & 0xFFFF)
+            )
             self.bus.axis_tvalid.value = 1
             await ReadOnly()
             while not self.bus.axis_tready.value:
                 await Edge(self.clock)
                 await ReadOnly()
         else:
-            for i, q in value['contents']['data']:
+            for q, i in value["contents"]["data"]:
                 await FallingEdge(self.clock)
                 self.bus.axis_tdata.value = int(
-                    (np.int32(i) << 16) | (np.int32(q) & 0xFFFF))
+                    (np.int32(q) << 16) | (np.int32(i) & 0xFFFF)
+                )
                 self.bus.axis_tvalid.value = 1
                 await ReadOnly()
                 while not self.bus.axis_tready.value:
@@ -121,9 +122,9 @@ async def reset(clk, reset_wire, num_cycles, active_val):
 
 @cocotb.test()
 async def test_lts_extractor_with_invalid(dut):
-    inm = AXISMonitor(dut, 'signal', dut.clk_in)
-    outm = AXISMonitor(dut, 'lts', dut.clk_in)
-    ind = AXISDriver(dut, 'signal', dut.clk_in, True)
+    inm = AXISMonitor(dut, "signal", dut.clk_in)
+    outm = AXISMonitor(dut, "lts", dut.clk_in)
+    ind = AXISDriver(dut, "signal", dut.clk_in, True)
     # Setup the DUT
     cocotb.start_soon(Clock(dut.clk_in, 10, units="ns").start())
     dut.sw_in.value = 4  # Threshold ~= 2000
@@ -137,7 +138,7 @@ async def test_lts_extractor_with_invalid(dut):
     q = signal[1::2]
     # Drive the DUT
     await ClockCycles(dut.clk_in, 1)
-    ind.append({'type': 'burst', 'contents': {'data': zip(i, q)}})
+    ind.append({"type": "burst", "contents": {"data": zip(q, i)}})
     await ClockCycles(dut.clk_in, 200)
     await set_ready(dut, 0)
     await ClockCycles(dut.clk_in, 100)
@@ -156,15 +157,14 @@ async def test_lts_extractor_with_invalid(dut):
     await set_ready(dut, 1)
     await ClockCycles(dut.clk_in, 90000)
     # Check that the data is what we expect
-    assert inm.transactions == len(i), 'Sent the wrong number of samples!'
-    assert outm.transactions == 128 * 19, 'Received the wrong number of samples!'
+    assert inm.transactions == len(i), "Sent the wrong number of samples!"
+    assert outm.transactions == 128 * 19, "Received the wrong number of samples!"
     # Check (visually) that it worked
-    lts_arr = np.array([
-        np.array(outm.data_i[i]) + 1j * np.array(outm.data_q[i])
-        for i in range(30)
-    ])
+    lts_arr = np.array(
+        [np.array(outm.data_i[i]) + 1j * np.array(outm.data_q[i]) for i in range(30)]
+    )
     expected_lts_arr = np.load(os.path.join(cwd, "lts_arr.npy"))
-    assert (lts_arr == expected_lts_arr).all(), 'LTS data is incorrect!'
+    assert (lts_arr == expected_lts_arr).all(), "LTS data is incorrect!"
     # np.save(os.path.join(cwd, "lts_arr.npy"), lts_arr)
     # for i in range(19):
     #     lts1 = np.array(outm.data_i[2 * i]) + 1j * np.array(outm.data_q[0])
@@ -177,9 +177,9 @@ async def test_lts_extractor_with_invalid(dut):
 
 @cocotb.test()
 async def test_lts_extractor_no_invalid(dut):
-    inm = AXISMonitor(dut, 'signal', dut.clk_in)
-    outm = AXISMonitor(dut, 'lts', dut.clk_in)
-    ind = AXISDriver(dut, 'signal', dut.clk_in, False)
+    inm = AXISMonitor(dut, "signal", dut.clk_in)
+    outm = AXISMonitor(dut, "lts", dut.clk_in)
+    ind = AXISDriver(dut, "signal", dut.clk_in, False)
     # Setup the DUT
     cocotb.start_soon(Clock(dut.clk_in, 10, units="ns").start())
     dut.sw_in.value = 4  # Threshold ~= 2000
@@ -193,7 +193,7 @@ async def test_lts_extractor_no_invalid(dut):
     q = signal[1::2]
     # Drive the DUT
     await ClockCycles(dut.clk_in, 1)
-    ind.append({'type': 'burst', 'contents': {'data': zip(i, q)}})
+    ind.append({"type": "burst", "contents": {"data": zip(q, i)}})
     await ClockCycles(dut.clk_in, 200)
     await set_ready(dut, 0)
     await ClockCycles(dut.clk_in, 100)
@@ -212,23 +212,22 @@ async def test_lts_extractor_no_invalid(dut):
     await set_ready(dut, 1)
     await ClockCycles(dut.clk_in, 30000)
     # Check that the data is what we expect
-    assert inm.transactions == len(i), 'Sent the wrong number of samples!'
-    assert outm.transactions == 128 * 19, 'Received the wrong number of samples!'
+    assert inm.transactions == len(i), "Sent the wrong number of samples!"
+    assert outm.transactions == 128 * 19, "Received the wrong number of samples!"
     # Check (visually) that it worked
-    lts_arr = np.array([
-        np.array(outm.data_i[i]) + 1j * np.array(outm.data_q[i])
-        for i in range(30)
-    ])
+    lts_arr = np.array(
+        [np.array(outm.data_i[i]) + 1j * np.array(outm.data_q[i]) for i in range(30)]
+    )
     expected_lts_arr = np.load(os.path.join(cwd, "lts_arr.npy"))
-    assert (lts_arr == expected_lts_arr).all(), 'LTS data is incorrect!'
+    assert (lts_arr == expected_lts_arr).all(), "LTS data is incorrect!"
     # np.save(os.path.join(cwd, "lts_arr.npy"), lts_arr)
-    # for i in range(19):
-    #     lts1 = np.array(outm.data_i[2 * i]) + 1j * np.array(outm.data_q[0])
-    #     lts2 = np.array(outm.data_i[2 * i + 1]) + 1j * np.array(outm.data_q[1])
-    #     # Plot the FFTs as a visual check
-    #     plt.plot(np.fft.fft(lts1).real, '-o')
-    #     plt.plot(np.fft.fft(lts2).real, '-o')
-    #     plt.show()
+    for i in range(19):
+        lts1 = np.array(outm.data_i[2 * i]) + 1j * np.array(outm.data_q[2 * i])
+        lts2 = np.array(outm.data_i[2 * i + 1]) + 1j * np.array(outm.data_q[2 * i + 1])
+        # Plot the FFTs as a visual check
+        plt.plot(np.fft.fft(lts1).real, "-o")
+        plt.plot(np.fft.fft(lts2).real, "-o")
+        plt.show()
 
 
 def lts_extractor_runner():

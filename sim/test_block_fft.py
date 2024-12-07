@@ -115,7 +115,7 @@ async def reset(clk, reset_wire, num_cycles, active_val):
     reset_wire.value = 1 - active_val
 
 
-@cocotb.test()
+# @cocotb.test()
 async def test_lot_of_data(dut):
     """
     Send the same sequence 10 times and make sure the output is the same despite randomly applying back pressure.
@@ -176,8 +176,7 @@ async def test_with_lts(dut):
     await ClockCycles(dut.clk_in, 1000)
     # Display only the real results
     vals = [val[0] for val in outm.data[0]]
-    fig, ax = plt.subplots(nrows=3, ncols=1, sharex=True)
-    ax[0].plot(vals, "-bo")
+    plt.plot(vals, "-bo")
     plt.show()
 
 

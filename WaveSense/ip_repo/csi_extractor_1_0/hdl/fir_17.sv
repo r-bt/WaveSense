@@ -7,53 +7,29 @@
  * 17-tap FIR filter to low-pass below 10 MHz, assuming Fs = 122.88 MHz.
  */
 module fir_17 #(
-    parameter integer C_S00_AXIS_TDATA_WIDTH  = 32,
-    parameter integer C_M00_AXIS_TDATA_WIDTH  = 32
+    parameter integer C_S_AXIS_TDATA_WIDTH  = 16,
+    parameter integer C_M_AXIS_TDATA_WIDTH  = 16
 ) (
-    // Ports of Axi Slave Bus Interface S00_AXIS
-    input wire  s00_axis_aclk, s00_axis_aresetn,
-    input wire  s00_axis_tvalid,
-    input wire signed [C_S00_AXIS_TDATA_WIDTH-1 : 0] s00_axis_tdata,
-    output logic  s00_axis_tready,
+    input wire aclk,
+    input wire aresetn,
 
-    // Ports of Axi Master Bus Interface M00_AXIS
-    input wire  m00_axis_aclk, m00_axis_aresetn,
-    input wire  m00_axis_tready,
-    output logic  m00_axis_tvalid,
-    output logic [C_M00_AXIS_TDATA_WIDTH-1 : 0] m00_axis_tdata
+    // Ports of Axi Slave Bus Interface s_AXIS
+    input wire  s_axis_data_tvalid,
+    input wire signed [C_S_AXIS_TDATA_WIDTH-1 : 0] s_axis_data_tdata,
+    output logic  s_axis_data_tready,
+
+    // Ports of Axi Master Bus Interface m_AXIS
+    input wire  m_axis_data_tready,
+    output logic  m_axis_data_tvalid,
+    output logic signed [C_M_AXIS_TDATA_WIDTH-1 : 0] m_axis_data_tdata
 );
 
     // localparam NUM_COEFFS = 25;
     localparam NUM_COEFFS = 17;
-    logic signed [7:0] coeffs [NUM_COEFFS-1 : 0];
+    logic signed [5:0] coeffs [NUM_COEFFS-1 : 0];
     //initializing values
     // TODO: Handle overflow correctly
     initial begin
-        // coeffs[0] = 1;
-        // coeffs[1] = 1;
-        // coeffs[2] = 1;
-        // coeffs[3] = 0;
-        // coeffs[4] = -2;
-        // coeffs[5] = -4;
-        // coeffs[6] = -5;
-        // coeffs[7] = -3;
-        // coeffs[8] = 3;
-        // coeffs[9] = 11;
-        // coeffs[10] = 19;
-        // coeffs[11] = 26;
-        // coeffs[12] = 29;
-        // coeffs[13] = 26;
-        // coeffs[14] = 19;
-        // coeffs[15] = 11;
-        // coeffs[16] = 3;
-        // coeffs[17] = -3;
-        // coeffs[18] = 5;
-        // coeffs[19] = -4;
-        // coeffs[20] = -2;
-        // coeffs[21] = 0;
-        // coeffs[22] = 1;
-        // coeffs[23] = 1;
-        // coeffs[24] = 1;
         coeffs[0] = -1;
         coeffs[1] = -2;
         coeffs[2] = -2;
@@ -76,26 +52,26 @@ module fir_17 #(
         end
     end
 
-    logic signed [C_M00_AXIS_TDATA_WIDTH-1:0] y_reg [NUM_COEFFS-1:0];
-    assign m00_axis_tdata = y_reg[0];
+    logic signed [C_M_AXIS_TDATA_WIDTH-1:0] y_reg [NUM_COEFFS-1:0];
+    assign m_axis_data_tdata = y_reg[0];
     logic [NUM_COEFFS-1:0] valid_reg;
-    assign m00_axis_tvalid = valid_reg[0];
-    assign s00_axis_tready = m00_axis_tready || ~valid_reg[0];
+    assign m_axis_data_tvalid = valid_reg[0];
+    assign s_axis_data_tready = m_axis_data_tready || ~valid_reg[0];
 
-    always_ff @(posedge s00_axis_aclk) begin
-        if (~s00_axis_aresetn) begin
+    always_ff @(posedge aclk) begin
+        if (~aresetn) begin
             for (int i = 0; i < NUM_COEFFS; i++) begin
                 y_reg[i] <= 0;
                 valid_reg[i] <= 0;
             end
-        end else if (s00_axis_tvalid && (m00_axis_tready || ~valid_reg[0])) begin
+        end else if (s_axis_data_tvalid && (m_axis_data_tready || ~valid_reg[0])) begin
             for (int i = 0; i < NUM_COEFFS - 1; i++) begin
-                y_reg[i] <= y_reg[i + 1] + s00_axis_tdata * coeffs[i];
+                y_reg[i] <= y_reg[i + 1] + s_axis_data_tdata * coeffs[i];
                 valid_reg[i] <= valid_reg[i + 1];
             end
-            y_reg[NUM_COEFFS - 1] <= s00_axis_tdata * coeffs[NUM_COEFFS - 1];
-            valid_reg[NUM_COEFFS - 1] <= s00_axis_tvalid;
-        end else if (m00_axis_tready) begin
+            y_reg[NUM_COEFFS - 1] <= s_axis_data_tdata * coeffs[NUM_COEFFS - 1];
+            valid_reg[NUM_COEFFS - 1] <= s_axis_data_tvalid;
+        end else if (m_axis_data_tready) begin
             valid_reg[0] <= 0;
         end
     end

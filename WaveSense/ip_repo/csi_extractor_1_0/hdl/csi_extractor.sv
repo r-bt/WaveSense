@@ -23,28 +23,63 @@ module csi_extractor_sv (
     output logic [3:0] led_out
 );
 
-    // Stage 0: Downsample 122.88 MSPS -> 20 MSPS
-    logic filter_axis_tvalid, filter_axis_tready;
-    logic [31:0] filter_axis_tdata;
-    fir_compiler_0 fir_inst (
+    logic signed [15:0] signal_i_data;
+    assign signal_i_data = $signed(signal_axis_tdata[15:0]);
+
+    logic signed [15:0] signal_q_data;
+    assign signal_q_data = $signed(signal_axis_tdata[31:16]); 
+
+    // // Stage 0: Downsample 122.88 MSPS -> 20 MSPS
+    logic filter_axis_tready;
+    
+    logic I_signal_axis_tready;
+    logic I_filter_axis_tvalid;
+    logic signed [31:0] I_filter_axis_tdata;
+    fir_17 #(
+        .C_S_AXIS_TDATA_WIDTH(16),
+        .C_M_AXIS_TDATA_WIDTH(27) // From bitgrowth output is 16+6 + log2(17) = 27 bits
+    ) I_fir_inst (
         .aclk(clk_in),
         .aresetn(~rst_in),
 
         .s_axis_data_tvalid(signal_axis_tvalid),
-        .s_axis_data_tdata(signal_axis_tdata),
-        .s_axis_data_tready(signal_axis_tready),
+        .s_axis_data_tdata(signal_i_data),
+        .s_axis_data_tready(I_signal_axis_tready),
 
-        .m_axis_data_tvalid(filter_axis_tvalid),
-        .m_axis_data_tdata(filter_axis_tdata),
+        .m_axis_data_tvalid(I_filter_axis_tvalid),
+        .m_axis_data_tdata(I_filter_axis_tdata),
         .m_axis_data_tready(filter_axis_tready)
     );
+
+    logic Q_signal_axis_tready;
+    logic Q_filter_axis_tvalid;
+    logic signed [31:0] Q_filter_axis_tdata;
+    fir_17  #(
+        .C_S_AXIS_TDATA_WIDTH(32),
+        .C_M_AXIS_TDATA_WIDTH(32)
+    ) Q_fir_inst (
+        .aclk(clk_in),
+        .aresetn(~rst_in),
+
+        .s_axis_data_tvalid(signal_axis_tvalid),
+        .s_axis_data_tdata(signal_q_data),
+        .s_axis_data_tready(Q_signal_axis_tready),
+
+        .m_axis_data_tvalid(Q_filter_axis_tvalid),
+        .m_axis_data_tdata(Q_filter_axis_tdata),
+        .m_axis_data_tready(filter_axis_tready)
+    );
+
+    assign signal_axis_tready = Q_signal_axis_tready;
+
     logic downsample_axis_tvalid, downsample_axis_tready;
     logic [31:0] downsample_axis_tdata;
     downsample downsample_inst (
         .s00_axis_aclk(clk_in),
         .s00_axis_aresetn(~rst_in),
-        .s00_axis_tvalid(filter_axis_tvalid),
-        .s00_axis_tdata(filter_axis_tdata),
+        .s00_axis_tvalid(I_filter_axis_tvalid && Q_filter_axis_tvalid),
+        // .s00_axis_tdata({Q_filter_axis_tdata[26:11], I_filter_axis_tdata[26:11]}),
+        .s00_axis_tdata(signal_axis_tdata),
         .s00_axis_tready(filter_axis_tready),
 
         .m00_axis_aclk(clk_in),
@@ -67,7 +102,7 @@ module csi_extractor_sv (
 
         .lts_axis_tvalid(lts_axis_tvalid),
         .lts_axis_tlast(lts_axis_tlast),
-        .lts_axis_tdata({lts_i_axis_tdata, lts_q_axis_tdata}),
+        .lts_axis_tdata({lts_q_axis_tdata, lts_i_axis_tdata}),
         .lts_axis_tready(lts_axis_tready),
 
         .sw_in(sw_in),
@@ -78,19 +113,21 @@ module csi_extractor_sv (
     logic fft_axis_tvalid, fft_axis_tlast;
     logic [31:0] fft_axis_tdata;
     logic fft_axis_tready;
-    xfft_0 xfft_0_inst (
-        .aclk(clk_in),
-        .aresetn(~rst_in),
+    block_fft fft_inst (
+        .clk_in(clk_in),
+        .rst_in(rst_in),
 
-        .s_axis_data_tvalid(lts_axis_tvalid),
-        .s_axis_data_tlast(lts_axis_tlast),
-        .s_axis_data_tdata({lts_q_axis_tdata, lts_i_axis_tdata}),
-        .s_axis_data_tready(lts_axis_tready),
+        .sample_axis_tvalid(lts_axis_tvalid),
+        .sample_axis_tlast(lts_axis_tlast),
+        .sample_re_axis_tdata(lts_i_axis_tdata),
+        .sample_im_axis_tdata(lts_q_axis_tdata),
+        .sample_axis_tready(lts_axis_tready),
 
-        .m_axis_data_tvalid(fft_axis_tvalid),
-        .m_axis_data_tlast(fft_axis_tlast),
-        .m_axis_data_tdata(fft_axis_tdata),
-        .m_axis_data_tready(fft_axis_tready)
+        .fft_axis_tvalid(fft_axis_tvalid),
+        .fft_axis_tlast(fft_axis_tlast),
+        .fft_re_axis_tdata(fft_axis_tdata[15:0]),
+        .fft_im_axis_tdata(fft_axis_tdata[31:16]),
+        .fft_axis_tready(fft_axis_tready)
     );
 
     // Stage 5: Equalizer

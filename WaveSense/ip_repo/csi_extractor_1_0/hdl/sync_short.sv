@@ -1,11 +1,17 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
+/**
+* Module `sync_short`
+*
+* Detects the short preamble in an 802.11 OFDM signal.
+*/
+
 module sync_short(
   input wire clk_in,
   input wire rst_in,
 
-  input wire [31:0] sample_in,
+  input wire [31:0] sample_in, // 16 bits I, 16 bits Q (I on the LSB)
   input wire sample_in_valid,
 
   output logic short_preamble_detected
@@ -31,8 +37,8 @@ module sync_short(
         .clk_in(clk_in),
         .rst_in(rst_in),
 
-        .i_in(sample_in[31:16]),
-        .q_in(sample_in[15:0]),
+        .i_in(sample_in[15:0]),
+        .q_in(sample_in[31:16]),
         .iq_valid_in(sample_in_valid),
 
         .mag_sq_out(mag_sq),
@@ -88,8 +94,8 @@ module sync_short(
         end else begin
             sample_delayed_conj_valid <= sample_delayed_valid;
 
-            sample_delayed_conj[31:16] <= sample_delayed[31:16];
-            sample_delayed_conj[15:0] <= ~sample_delayed[15:0] + 1;
+            sample_delayed_conj[15:0] <= sample_delayed[15:0];
+            sample_delayed_conj[31:16] <= ~sample_delayed[31:16] + 1;
 
             if (sample_in_valid) begin
                 sample_in_prev <= sample_in;
@@ -104,14 +110,14 @@ module sync_short(
     complex_multiply delay_prod_inst (
         .clk_in(clk_in),
 
-        .i0_in(sample_in_prev[31:16]),
-        .q0_in(sample_in_prev[15:0]),
-        .i1_in(sample_delayed_conj[31:16]),
-        .q1_in(sample_delayed_conj[15:0]),
+        .i0_in(sample_in_prev[15:0]),
+        .q0_in(sample_in_prev[31:16]),
+        .i1_in(sample_delayed_conj[15:0]),
+        .q1_in(sample_delayed_conj[31:16]),
         .valid_in(sample_in_valid_prev),
 
-        .i_out(prod[63:32]),
-        .q_out(prod[31:0]),
+        .i_out(prod[31:0]),
+        .q_out(prod[63:32]),
         .valid_out(prod_valid)
     );
 
@@ -195,7 +201,7 @@ module sync_short(
 
             if (delay_prod_avg_valid) begin
                 if (delay_prod_avg_mag > prod_thres) begin
-                    if (sample_in_prev[31] == 1) begin  // TODO: This is wrong
+                    if (sample_in_prev[15] == 1) begin 
                         neg_count <= neg_count + 1;
                     end else begin
                         pos_count <= pos_count + 1;

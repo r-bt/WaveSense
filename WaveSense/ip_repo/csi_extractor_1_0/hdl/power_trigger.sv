@@ -20,8 +20,8 @@ module power_trigger #(
 
     logic [15:0] sample_cnt;
     logic [15:0] abs_i;
-    assign abs_i = signal_data_in[31] ? (~signal_data_in[31:16]) + 1
-                                      : signal_data_in[31:16];
+    assign abs_i = signal_data_in[15] ? (~signal_data_in[15:0]) + 1
+                                      : signal_data_in[15:0];
 
     always_ff @(posedge clk_in) begin
         if (rst_in) begin

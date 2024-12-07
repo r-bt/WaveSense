@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
+from test_utils import upsample_data, DESIRED_SAMPLE_RATE, DATA_SAMPLE_RATE
 
 # cocotb imports
 import cocotb
@@ -20,7 +21,7 @@ class AXISMonitor(BusMonitor):
     """
 
     def __init__(self, dut, name, clk, callback=None):
-        self._signals = ['axis_tvalid', 'axis_tready', 'axis_tdata']
+        self._signals = ["axis_tvalid", "axis_tready", "axis_tdata"]
         BusMonitor.__init__(self, dut, name, clk, callback=callback)
         self.clock = clk
         self.transactions = 0
@@ -49,23 +50,23 @@ class AXISMonitor(BusMonitor):
 
 class AXISDriver(BusDriver):
     def __init__(self, dut, name, clk):
-        self._signals = ['axis_tvalid', 'axis_tready', 'axis_tdata']
+        self._signals = ["axis_tvalid", "axis_tready", "axis_tdata"]
         BusDriver.__init__(self, dut, name, clk)
         self.clock = clk
         self.bus.axis_tdata.value = 0
         self.bus.axis_tvalid.value = 0
 
     async def _driver_send(self, value, sync=True):
-        if value['type'] == 'single':
+        if value["type"] == "single":
             await FallingEdge(self.clock)
-            self.bus.axis_tdata.value = value['contents']['data']
+            self.bus.axis_tdata.value = value["contents"]["data"]
             self.bus.axis_tvalid.value = 1
             await ReadOnly()
             while not self.bus.axis_tready.value:
                 await Edge(self.clock)
                 await ReadOnly()
         else:
-            for val in value['contents']['data']:
+            for val in value["contents"]["data"]:
                 await FallingEdge(self.clock)
                 self.bus.axis_tdata.value = int(val)
                 self.bus.axis_tvalid.value = 1
@@ -90,9 +91,9 @@ async def reset(clk, reset_wire, num_cycles, active_val):
 
 @cocotb.test()
 async def test_downsample_sinusoid(dut):
-    inm = AXISMonitor(dut, 's00', dut.s00_axis_aclk)
-    outm = AXISMonitor(dut, 'm00', dut.s00_axis_aclk)
-    ind = AXISDriver(dut, 's00', dut.s00_axis_aclk)
+    inm = AXISMonitor(dut, "s00", dut.s00_axis_aclk)
+    outm = AXISMonitor(dut, "m00", dut.s00_axis_aclk)
+    ind = AXISDriver(dut, "s00", dut.s00_axis_aclk)
     # Setup the DUT
     cocotb.start_soon(Clock(dut.s00_axis_aclk, 10, units="ns").start())
     await set_ready(dut, 1)
@@ -102,14 +103,20 @@ async def test_downsample_sinusoid(dut):
     f_out = 20
     n_samples = 10000
     filter_len = 17
-    data_in = (2**8 * (3 + np.sin(np.arange(n_samples) * np.pi / f_in)
-                        - np.sin(np.arange(n_samples) * 3 * np.pi / f_in)
-                        + np.cos(np.arange(n_samples) * 4 * np.pi / f_in))).astype(int)
+    data_in = (
+        2**8
+        * (
+            3
+            + np.sin(np.arange(n_samples) * np.pi / f_in)
+            - np.sin(np.arange(n_samples) * 3 * np.pi / f_in)
+            + np.cos(np.arange(n_samples) * 4 * np.pi / f_in)
+        )
+    ).astype(int)
     # Drive the DUT
     await ClockCycles(dut.s00_axis_aclk, 1)
-    ind.append({'type': 'burst', 'contents': {'data': data_in}})
+    ind.append({"type": "burst", "contents": {"data": data_in}})
     # Flush the FIR filter
-    ind.append({'type': 'burst', 'contents': {'data': np.zeros(filter_len)}})
+    ind.append({"type": "burst", "contents": {"data": np.zeros(filter_len)}})
     # Test back-pressure
     await ClockCycles(dut.s00_axis_aclk, n_samples // 3)
     await set_ready(dut, 0)
@@ -121,18 +128,44 @@ async def test_downsample_sinusoid(dut):
     await set_ready(dut, 1)
     await ClockCycles(dut.s00_axis_aclk, 2 * n_samples // 3 + 50)
     # Check that the data is what we expect
-    assert inm.transactions == n_samples + \
-        filter_len, 'Sent the wrong number of samples!'
+    assert (
+        inm.transactions == n_samples + filter_len
+    ), "Sent the wrong number of samples!"
     assert outm.transactions == int(
-        n_samples * f_out / f_in), 'Received the wrong number of samples!'
+        n_samples * f_out / f_in
+    ), "Received the wrong number of samples!"
     # Check that downsampling worked
     fft_in = np.abs(np.fft.rfft(inm.data)) / inm.transactions / 2 / np.pi
     fft_out = np.abs(np.fft.rfft(outm.data)) / outm.transactions / 2 / np.pi
     # plt.plot(fft_in[:len(fft_out)] * 9)
     # plt.plot(fft_out)
     # plt.show()
-    assert np.isclose(fft_in[:len(fft_out)] * 9, fft_out,
-                      atol=100, rtol=0.1).all(), 'FFT does not match!'
+    assert np.isclose(
+        fft_in[: len(fft_out)] * 9, fft_out, atol=100, rtol=0.1
+    ).all(), "FFT does not match!"
+
+
+@cocotb.test()
+async def test_downsample_generated_data(dut):
+    inm = AXISMonitor(dut, "s00", dut.s00_axis_aclk)
+    outm = AXISMonitor(dut, "m00", dut.s00_axis_aclk)
+    ind = AXISDriver(dut, "s00", dut.s00_axis_aclk)
+    # Setup the DUT
+    cocotb.start_soon(Clock(dut.s00_axis_aclk, 10, units="ns").start())
+    await set_ready(dut, 1)
+    await reset(dut.s00_axis_aclk, dut.s00_axis_aresetn, 2, 0)
+    # Generate the data
+    data = upsample_data(np.arange(1000), DATA_SAMPLE_RATE, DESIRED_SAMPLE_RATE)
+    # Drive the DUT
+    ind.append({"type": "burst", "contents": {"data": data}})
+    # Wait
+    await ClockCycles(dut.s00_axis_aclk, 8000)
+    print(outm.data)
+    # Check that the data is what we expect
+    assert inm.transactions == len(data), "Sent the wrong number of samples!"
+    assert outm.transactions == 1000, "Received the wrong number of samples!"
+    # Check that downsampling worked
+    assert (outm.data == data[::6]).all(), "Data does not match!"
 
 
 def downsample_runner():
@@ -142,13 +175,10 @@ def downsample_runner():
     sys.path.append(str(proj_path / "sim" / "model"))
     sources = [
         proj_path / "WaveSense/ip_repo/csi_extractor_1_0/hdl/downsample.sv",
-        proj_path / "WaveSense/ip_repo/csi_extractor_1_0/hdl/fir_17.sv"
+        proj_path / "WaveSense/ip_repo/csi_extractor_1_0/hdl/fir_17.sv",
     ]
     build_test_args = ["-Wall"]  # ,"COCOTB_RESOLVE_X=ZEROS"]
-    parameters = {
-        'SAMPLE_RATE_IN': 122880,
-        'SAMPLE_RATE_OUT': 20000
-    }
+    parameters = {"SAMPLE_RATE_IN": 122880, "SAMPLE_RATE_OUT": 20000}
     sys.path.append(str(proj_path / "sim"))
     runner = get_runner(sim)
     runner.build(

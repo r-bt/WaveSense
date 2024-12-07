@@ -11,11 +11,11 @@ module lts_extractor (
     input wire rst_in,
 
     input wire signal_axis_tvalid,
-    input wire [31:0] signal_axis_tdata,
+    input wire [31:0] signal_axis_tdata, // 16 bits I, 16 bits Q (I on the LSB)
     output logic signal_axis_tready,
 
     output logic lts_axis_tvalid, lts_axis_tlast,
-    output logic [31:0] lts_axis_tdata,
+    output logic [31:0] lts_axis_tdata, // 16 bits I, 16 bits Q (I on the LSB)
     input wire lts_axis_tready,
 
     input wire [3:0] sw_in,
@@ -64,8 +64,8 @@ module lts_extractor (
         .rst_in(rst_in || sync_long_rst),
 
         .signal_axis_tvalid(signal_axis_tvalid && (state == SYNC_LONG)),
-        .signal_i_axis_tdata(signal_axis_tdata[31:16]),
-        .signal_q_axis_tdata(signal_axis_tdata[15:0]),
+        .signal_i_axis_tdata(signal_axis_tdata[15:0]),
+        .signal_q_axis_tdata(signal_axis_tdata[31:16]),
         .signal_axis_tready(signal_axis_tready),
 
         .lts_axis_tvalid(lts_axis_tvalid),
@@ -74,7 +74,7 @@ module lts_extractor (
         .lts_q_axis_tdata(lts_q_axis_tdata),
         .lts_axis_tready(lts_axis_tready)
     );
-    assign lts_axis_tdata = {lts_i_axis_tdata, lts_q_axis_tdata};
+    assign lts_axis_tdata = {lts_q_axis_tdata, lts_i_axis_tdata};
 
     // Visualize the state using the LEDs
     assign led_out = {

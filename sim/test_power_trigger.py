@@ -2,8 +2,6 @@
 import os
 import sys
 from pathlib import Path
-import random
-import logging
 import numpy as np
 
 # cocotb imports
@@ -11,7 +9,6 @@ import cocotb
 from cocotb.triggers import RisingEdge, ClockCycles, FallingEdge, ReadOnly
 from cocotb.runner import get_runner
 from cocotb.clock import Clock
-from cocotb.handle import SimHandleBase
 
 # Get current directory
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -43,12 +40,12 @@ async def sample_data_test(dut):
     wave = np.fromfile(samples_path, dtype=np.uint16)
     n_samples = len(wave) // 2
     # Get the real and imaginary parts
-    imag = wave[::2]
-    real = wave[1::2]
+    i = wave[::2]  # Real part
+    q = wave[1::2]  # Imaginary part
     # Combine the values into 32 bit values
     values = []
-    for i in range(n_samples):
-        values.append((imag[i].astype(np.uint32) << 16) | real[i].astype(np.uint32))
+    for j in range(n_samples):
+        values.append((q[j].astype(np.uint32) << 16) | i[j].astype(np.uint32))
     # Send the values to the DUT
     dut.signal_valid_in.value = 1
     dut.power_thresh_in.value = 100

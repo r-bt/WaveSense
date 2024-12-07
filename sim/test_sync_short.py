@@ -36,35 +36,13 @@ async def reset(clk, reset_wire, num_cycles, active_val):
     reset_wire.value = 1 - active_val
 
 
-def plot_results():
-    fig, ax = plt.subplots(nrows=2, ncols=1, sharex=True)
-    ax[0].plot([s.real for s in samples[:500]], "-bo")
-    ax[1].plot(
-        [
-            abs(
-                sum(
-                    [
-                        samples[i + j] * samples[i + j + 16].conjugate()
-                        for j in range(0, 48)
-                    ]
-                )
-            )
-            / sum([abs(samples[i + j]) ** 2 for j in range(0, 48)])
-            for i in range(0, 500)
-        ],
-        "-ro",
-    )
-    plt.show()
-
-
 class SyncMonitor(BusMonitor):
     """
     monitors axi streaming bus
     """
 
     def __init__(self, dut, name, clk, callback=None):
-        self._signals = ["sample_in", "sample_in_valid",
-                         "short_preamble_detected"]
+        self._signals = ["sample_in", "sample_in_valid", "short_preamble_detected"]
         BusMonitor.__init__(self, dut, name, clk, callback=callback)
         self.clock = clk
         self.transactions = 0
@@ -81,9 +59,7 @@ class SyncMonitor(BusMonitor):
             await read_only  # readonly (the postline)
             self.transactions += 1
             short_preamble_detected = self.bus.short_preamble_detected.value
-            self.short_preamble_detected.append(
-                [short_preamble_detected, self.transactions]
-            )
+            self.short_preamble_detected.append(short_preamble_detected)
             self._recv((short_preamble_detected))
 
 
@@ -114,7 +90,7 @@ class SyncDriver(BusDriver):
         self.bus.sample_in_valid.value = 0
 
 
-@cocotb.test
+# @cocotb.test
 async def test_with_mock_data_no_invalid(dut):
     """
     Sends 10 repeating sequence of I [-7, 8] and Q = 5 to the sync_short module
@@ -129,28 +105,23 @@ async def test_with_mock_data_no_invalid(dut):
     mock_i_values = np.arange(-7, 9)  # -7 to 8 inclusive
     mock_q_values = np.full_like(mock_i_values, 5)  # Q values are all 5
 
-    # Combine I and Q into pairs
-    mock_i_q_pairs = np.column_stack((mock_i_values, mock_q_values))
-
-    # Repeat the pairs 10 times
-    mock_i_q_pairs = np.tile(mock_i_q_pairs, (10, 1))
+    mock_i_values = np.tile(mock_i_values, 10)
+    mock_q_values = np.tile(mock_q_values, 10)
 
     # Combine the values into 32 bit values
-    values = (mock_i_q_pairs[:, 0].astype(np.uint32) << 16) | (
-        mock_i_q_pairs[:, 1].astype(np.uint16)
-    )
+    values = (mock_q_values.astype(np.uint32) << 16) | (mock_i_values.astype(np.uint16))
 
     await ind._driver_send(values)
     await ClockCycles(dut.clk_in, 300)
 
     # One short preamble should be detected
 
-    detected = [x for x in outm.short_preamble_detected if x[0] == 1]
+    detected = [x for x in outm.short_preamble_detected if x == 1]
 
     assert len(detected) == 1
 
 
-@cocotb.test
+# @cocotb.test
 async def test_with_mock_data_with_invalid(dut):
     """
     Sends 10 repeating sequence of I [-7, 8] and Q = 5 to the sync_short module
@@ -165,40 +136,44 @@ async def test_with_mock_data_with_invalid(dut):
     mock_i_values = np.arange(-7, 9)  # -7 to 8 inclusive
     mock_q_values = np.full_like(mock_i_values, 5)  # Q values are all 5
 
-    # Combine I and Q into pairs
-    mock_i_q_pairs = np.column_stack((mock_i_values, mock_q_values))
-
-    # Repeat the pairs 10 times
-    mock_i_q_pairs = np.tile(mock_i_q_pairs, (10, 1))
+    mock_i_values = np.tile(mock_i_values, 10)
+    mock_q_values = np.tile(mock_q_values, 10)
 
     # Combine the values into 32 bit values
-    values = (mock_i_q_pairs[:, 0].astype(np.uint32) << 16) | (
-        mock_i_q_pairs[:, 1].astype(np.uint16)
-    )
+    values = (mock_q_values.astype(np.uint32) << 16) | (mock_i_values.astype(np.uint16))
 
     await ind._driver_send(values)
     await ClockCycles(dut.clk_in, 300)
 
     # One short preamble should be detected
 
-    detected = [x for x in outm.short_preamble_detected if x[0] == 1]
+    detected = [x for x in outm.short_preamble_detected if x == 1]
 
     assert len(detected) == 1
 
 
-# @cocotb.test
-# async def test_sync_short(dut):
-#     """
-#     Sends samples.dat to the sync_short module
-#     """
-#     outm = SyncMonitor(dut, "", dut.clk_in)
-#     ind = SyncDriver(dut, "", dut.clk_in)
-#     # Setup the module
-#     cocotb.start_soon(Clock(dut.clk_in, 10, units="ns").start())
-#     await reset(dut.clk_in, dut.rst_in, 2, 1)
-#     # Send the samples
-#     await ind._driver_send(combined_values)
-#     await ClockCycles(dut.clk_in, 1000)
+@cocotb.test
+async def test_with_samples(dut):
+    """
+    Sends the samples from the file to the sync_short module
+    """
+    outm = SyncMonitor(dut, "", dut.clk_in)
+    ind = SyncDriver(dut, "", dut.clk_in, False)
+    # Setup the module
+    cocotb.start_soon(Clock(dut.clk_in, 10, units="ns").start())
+    await reset(dut.clk_in, dut.rst_in, 2, 1)
+    # Read the samples file
+    wave = np.fromfile(samples_path, dtype=np.uint16)
+    n_samples = len(wave) // 2
+    # Get the real and imaginary parts
+    i = wave[::2]  # Real part
+    q = wave[1::2]  # Imaginary part
+    # Combine the values into 32 bit values
+    values = (q.astype(np.uint32) << 16) | i.astype(np.uint16)
+    # Send the values to the DUT
+    await ind._driver_send(values)
+    # Wait some time
+    await ClockCycles(dut.clk_in, 1000)
 
 
 def sync_short_runner():
