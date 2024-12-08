@@ -78,8 +78,7 @@ module csi_extractor_sv (
         .s00_axis_aclk(clk_in),
         .s00_axis_aresetn(~rst_in),
         .s00_axis_tvalid(I_filter_axis_tvalid && Q_filter_axis_tvalid),
-        // .s00_axis_tdata({Q_filter_axis_tdata[26:11], I_filter_axis_tdata[26:11]}),
-        .s00_axis_tdata(signal_axis_tdata),
+        .s00_axis_tdata({Q_filter_axis_tdata[26:11], I_filter_axis_tdata[26:11]}),
         .s00_axis_tready(filter_axis_tready),
 
         .m00_axis_aclk(clk_in),
