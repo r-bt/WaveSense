@@ -65,7 +65,7 @@ module block_fft (
                     end
                 end
                 EXTENDING: begin
-                    if (fft_ready && fft_axis_tlast) begin
+                    if (fft_axis_tready && fft_axis_tlast) begin
                         sequences <= sequences - 1;
                         if (sequences == 1) begin
                             state <= RESETTING;

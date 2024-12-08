@@ -144,9 +144,12 @@ async def test_lot_of_data(dut):
     # Apply back pressure randomly while sending in the data
     while outm.transactions != transactions:
         await set_ready(dut, np.random.randint(2))
+        await ClockCycles(dut.clk_in, 1)
     # Ensure that the output is always the same
     for i in range(1, transactions):
         assert outm.data[i] == outm.data[0]
+    # Display the results
+    plot_results(outm.data[0], n_samples, fs)
 
 
 @cocotb.test()
@@ -173,7 +176,12 @@ async def test_with_lts(dut):
         }
     )
     # Wait
-    await ClockCycles(dut.clk_in, 1000)
+    cycles = 0
+    # Apply back pressure randomly while sending in the data
+    while cycles < 1000:
+        await set_ready(dut, np.random.randint(2))
+        await ClockCycles(dut.clk_in, 1)
+        cycles += 1
     # Display only the real results
     vals = [val[0] for val in outm.data[0]]
     plt.plot(vals, "-bo")

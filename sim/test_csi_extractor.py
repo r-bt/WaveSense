@@ -241,6 +241,16 @@ async def partial_lts_extractor_test(dut):
     # Drive the DUT
     await ClockCycles(dut.clk_in, 1)
     ind.append({"type": "burst", "contents": {"data": zip(q, i)}})
+    ready_cycles = 0
+
+    while ready_cycles < 140000:
+        # Randomly set ready
+        is_ready = random.randint(0, 1)
+        # is_ready = 1
+        await set_ready(dut, is_ready)
+        ready_cycles += 1 if is_ready else 0
+        await ClockCycles(dut.clk_in, 1)
+
     # await ClockCycles(dut.clk_in, 200)
     # await set_ready(dut, 0)
     # await ClockCycles(dut.clk_in, 100)
@@ -257,7 +267,24 @@ async def partial_lts_extractor_test(dut):
     # await set_ready(dut, 0)
     # await ClockCycles(dut.clk_in, 49)
     # await set_ready(dut, 1)
-    await ClockCycles(dut.clk_in, 140000)
+    # await ClockCycles(dut.clk_in, 70000)
+    # await ClockCycles(dut.clk_in, 200)
+    # await set_ready(dut, 0)
+    # await ClockCycles(dut.clk_in, 100)
+    # await set_ready(dut, 1)
+    # await ClockCycles(dut.clk_in, 115)
+    # await set_ready(dut, 0)
+    # await ClockCycles(dut.clk_in, 49)
+    # await set_ready(dut, 1)
+    # await ClockCycles(dut.clk_in, 217)
+    # await set_ready(dut, 0)
+    # await ClockCycles(dut.clk_in, 49)
+    # await set_ready(dut, 1)
+    # await ClockCycles(dut.clk_in, 12)
+    # await set_ready(dut, 0)
+    # await ClockCycles(dut.clk_in, 49)
+    # await set_ready(dut, 1)
+    # await ClockCycles(dut.clk_in, 70000)
     # Check that we sent and received the correct amount of data
     assert inm.transactions == len(i), "Sent the wrong number of samples!"
     # Check we received the correct number of samples
