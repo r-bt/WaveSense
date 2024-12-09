@@ -293,6 +293,8 @@ async def partial_lts_extractor_test(dut):
     for i in range(19):
         plt.plot(outm.data_i[i], "-o")
         plt.plot(outm.data_q[i], "-o")
+        # Include legend
+        plt.legend(["Real", "Imaginary"])
         plt.show()
     # assert outm.transactions == 128 * 19, "Received the wrong number of samples!"
     # # Save the LTS data
